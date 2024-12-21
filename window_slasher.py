@@ -4,8 +4,8 @@ import pandas as pd
 import csv
 import window_slasher_fun
 
-CONST_NUM_CITIES = 6
-CONST_NUM_FEATS = 11
+CONST_NUM_CITIES = 2
+CONST_NUM_FEATS = 5
 CONST_SKIP_HOURS = 2
 
 CONST_day_ticks = 24
@@ -23,95 +23,102 @@ df = pd.DataFrame(read_csv('./proc_data/concat_clean_data.csv', sep="\t"))
 # basic adjustment
 df = df.reset_index(drop=True)
 df = df.apply(pd.to_numeric, errors='coerce')
-dim = df.shape
 
 # seperate time from data
 enc_time = df[['enc_time_1', 'enc_time_2']]
 df = df.drop(["enc_time_1", "enc_time_2"], axis=1)
-print(df)
-print(enc_time)
+dim = df.shape
 
+print("Checking if data consists of only full days...")
+# one more check if data consists of only full days
+if dim[0] % CONST_day_ticks != 0:
+    print("Data does not consist of full days. Exiting...")
+    exit()
+else:
+    print("##### Data consists of only full days. #####")
+    print()
+
+print("Splitting data into train and test set...")
 # split data in ratio
 # TO DO: splitting does not respect full days, split the data so that both X and Y consist of full
 # days from 00:00 to 23:00, ready to slash into windows
-X, Y = window_slasher_fun.split_train_test_data(df, 0.80)
+X, Y = window_slasher_fun.split_train_test_data(df, 0.80, CONST_day_ticks)
 X = X.reset_index(drop=True)
 Y = Y.reset_index(drop=True)
 
+# checks for X and Y if they consist of only full days
+if (X.shape[0] % CONST_day_ticks != 0 and Y.shape[0] % CONST_day_ticks != 0):
+    print("Data does not consist of full days. Exiting...")
+    exit()
+else:
+    print("##### Data split to X and Y performed successfully. #####")
+    print()
+
+print("Normalizing data...")
 # params to normalize data
-# TO DO: normalization update, feature normalization reduces data to [-1, 1] interval. This contradicts 
-# new loss function implementation which involves logarithm function. For log function, temperature 
-# should be normalised to [0, 1]. 
-m = np.mean(X, 0)
 max = np.max(X, 0)
 min = np.min(X, 0)
 
-# normalizing data to [lower, upper]
-# TO DO: write this data to files, so further automation is possible
-lower = -1
+# normalizing data to [lower, upper] interval
+lower = 0
 upper = 1
 for i in df.columns:
     X[i] = (X[i]-min[i])*(upper - lower)/(max[i] - min[i]) + lower
     Y[i] = (Y[i]-min[i])*(upper - lower)/(max[i] - min[i]) + lower
-print(X)
-print(Y)
+print("##### Data normalized successfully. #####")
+print()
 
+print("Selecting features for X and Y...")
 # determine which features are present in X
 x_bools = [True for _ in range(dim[1])]
 
 # determine which features are present in Y to predict
-# TO DO: using explicit indices is CRIMINAL
-# 0 - temperature
-# 3 - wind speed
-y_feats_num = [0, 3]
+y_feats = ["Ind_temp", "Ind_wind"]
+y_feats_num = [df.columns.get_loc(i) for i in y_feats]
 y_bools = [False for _ in range(dim[1])]
 for ind in y_feats_num:
     for i in range(CONST_NUM_CITIES):
         y_bools[ind + i*CONST_NUM_FEATS] = True
 
-m = m[x_bools]
+#m = m[x_bools]
 max = max[x_bools]
 min = min[x_bools]
 
 dim_train = X.shape
 dim_test = Y.shape
-print(dim_train)
-print(dim_test)
+print("##### Features for X and Y selected successfully. #####")
+print()
 
+print("Slashing data into windows...")
 num_of_windows_train = int((dim_train[0] - CONST_window_tick_size)/CONST_day_ticks)
 num_of_windows_test = int((dim_test[0] - CONST_window_tick_size)/CONST_day_ticks)
 
-windows_train = np.array([np.array(X[:][i*CONST_day_ticks:(i*CONST_day_ticks + CONST_window_tick_size)]) for i in range(num_of_windows_train)])
-windows_test = np.array([np.array(Y[:][i*CONST_day_ticks:(i*CONST_day_ticks + CONST_window_tick_size)]) for i in range(num_of_windows_test)])
+windows_train = np.array([np.array(X[:][i*CONST_day_ticks:(i*CONST_day_ticks + CONST_window_tick_size)]) 
+                        for i in range(num_of_windows_train)])
+windows_test = np.array([np.array(Y[:][i*CONST_day_ticks:(i*CONST_day_ticks + CONST_window_tick_size)]) 
+                        for i in range(num_of_windows_test)])
 
-X_windows_train, Y_windows_train = window_slasher_fun.split_windows_X_Y(windows_train, x_bools, y_bools, CONST_m, CONST_n, CONST_day_ticks, CONST_window_tick_size)
-X_windows_test, Y_windows_test =  window_slasher_fun.split_windows_X_Y(windows_test, x_bools, y_bools, CONST_m, CONST_n, CONST_day_ticks, CONST_window_tick_size)
+X_windows_train, Y_windows_train = window_slasher_fun.split_windows_X_Y(windows_train, 
+                        x_bools, y_bools, CONST_m, CONST_n, CONST_day_ticks, CONST_window_tick_size)
+X_windows_test, Y_windows_test =  window_slasher_fun.split_windows_X_Y(windows_test, 
+                        x_bools, y_bools, CONST_m, CONST_n, CONST_day_ticks, CONST_window_tick_size)
+print("##### Data slashed into windows. #####")
+print()
 
-print(X_windows_train.shape)
-print(X_windows_test.shape)
-
-num_of_feat_Y = 2
-
+print("Formating data in X and Y windows...")
+num_of_feat_Y = len(y_feats)
 temp_mask = [False for _ in range(CONST_day_ticks*CONST_NUM_CITIES*CONST_n*num_of_feat_Y)]
 wind_mask = [False for _ in range(CONST_day_ticks*CONST_NUM_CITIES*CONST_n*num_of_feat_Y)]
-#print(np.array(temp_mask).shape)
-#print(np.array(wind_mask).shape)
-
 
 for j in range(CONST_n):
     for i in range(CONST_day_ticks):
         temp_mask[j*CONST_day_ticks*num_of_feat_Y*CONST_NUM_CITIES 
-                  + num_of_feat_Y*CONST_NUM_CITIES*i] = True
+                  + num_of_feat_Y*CONST_NUM_CITIES*i+y_feats_num[0]] = True
 
 for j in range(CONST_n):
     for i in range(CONST_day_ticks):
         wind_mask[j*CONST_day_ticks*num_of_feat_Y*CONST_NUM_CITIES 
-                  + num_of_feat_Y*CONST_NUM_CITIES*i + 1] = True
-
-#print(temp_mask)
-#print(wind_mask)
-#print(np.array(temp_mask).shape)
-#print(np.array(wind_mask).shape)
+                  + num_of_feat_Y*CONST_NUM_CITIES*i + y_feats_num[1]] = True
 
 Y_temp_train = Y_windows_train.T[temp_mask].T
 Y_temp_test = Y_windows_test.T[temp_mask].T
@@ -120,65 +127,62 @@ Y_wind_train = Y_windows_train.T[wind_mask].T
 Y_wind_test = Y_windows_test.T[wind_mask].T
 
 Y_windows_train = [None for _ in range(Y_temp_train.shape[0])]
-#np.array((Y_temp_train.shape[0], CONST_n*num_of_feat_Y))
 Y_windows_test = [None for _ in range(Y_temp_test.shape[0])]
-#np.array((Y_temp_test.shape[0], CONST_n*num_of_feat_Y))
 
 # get mean temperature and max wind speed
 # TO DO: generating bool variable which idicates if "strong wind" took place should also be possible
+# to do so, one needs to define a threshold for wind speed and replace the np.max with a bool variable
+# indicating if the threshold was exceeded
 for i in range(Y_temp_train.shape[0]):
     Y_windows_train[i] = np.array([np.mean(Y_temp_train[i][0:CONST_day_ticks]), 
                                     np.max(Y_wind_train[i][0:CONST_day_ticks]), 
-                                    np.mean(Y_temp_train[i][CONST_day_ticks:-1]), 
-                                    np.max(Y_temp_train[i][CONST_day_ticks:-1])])
+                                    np.mean(Y_temp_train[i][CONST_day_ticks:2*CONST_day_ticks]), 
+                                    np.max(Y_temp_train[i][CONST_day_ticks:2*CONST_day_ticks])])
     
 for i in range(Y_temp_test.shape[0]):
     Y_windows_test[i] = np.array([np.mean(Y_temp_test[i][0:CONST_day_ticks]), 
                                     np.max(Y_wind_test[i][0:CONST_day_ticks]), 
-                                    np.mean(Y_temp_test[i][CONST_day_ticks:-1]), 
-                                    np.max(Y_temp_test[i][CONST_day_ticks:-1])])
+                                    np.mean(Y_temp_test[i][CONST_day_ticks:2*CONST_day_ticks]), 
+                                    np.max(Y_temp_test[i][CONST_day_ticks:2*CONST_day_ticks])])
+
+print("##### Data formating in X and Y windows finished. #####")
+print()
 
 X_windows_train = np.array(X_windows_train)
 X_windows_test = np.array(X_windows_test)
 Y_windows_train = pd.DataFrame(Y_windows_train)
 Y_windows_test = pd.DataFrame(Y_windows_test)
 
-'''
-print(Y_temp_train.shape)
-print(Y_wind_test.shape)
-print(Y_temp_train.shape)
-print(Y_wind_test.shape)
-'''
+print("Skipping hours based on CONST_SKIP_HOURS to reduce data volume...")
 skip_hours = [False for _ in range(X_windows_train.shape[1])]
 for i in range(int(CONST_m*CONST_day_ticks/CONST_SKIP_HOURS)):
     # TO DO: time is now encoded into 2 categories and is stored seperately from data
     # + 1 because there is the time variable indicating the week of the year 
-    for j in range((CONST_NUM_FEATS*CONST_NUM_CITIES + 1)):
-        skip_hours[i*(CONST_NUM_CITIES*CONST_NUM_FEATS + 1)*CONST_SKIP_HOURS + j] = True
+    for j in range((CONST_NUM_FEATS*CONST_NUM_CITIES)):
+        skip_hours[i*(CONST_NUM_CITIES*CONST_NUM_FEATS)*CONST_SKIP_HOURS + j] = True
 
 X_windows_train = X_windows_train.T[skip_hours].T
 X_windows_test = X_windows_test.T[skip_hours].T
+print("##### Data volume reduced. #####")
+print()
 
-print(X_windows_train.shape)
-print(X_windows_test.shape)
-print(Y_windows_train.shape)
-print(Y_windows_test.shape)
+print("Appending encoded time to data...")
+time_to_append_train = np.array([np.array(enc_time.iloc[[i*CONST_day_ticks]]).reshape(-1) 
+                        for i in range(num_of_windows_train)]) 
+time_to_append_test = np.array([np.array(enc_time.iloc[[i*CONST_day_ticks]]).reshape(-1) 
+                        for i in range(num_of_windows_test)]) 
+X_windows_train = np.append(X_windows_train, time_to_append_train, axis=1)
+X_windows_test = np.append(X_windows_test, time_to_append_test, axis=1)
+print("##### Encoded time appended to data. #####")
+print()
 
-
-path = './clean_norm_data/new_feats/'
+print("Saving data to files...")
+path = './clean_norm_data/'
 window_slasher_fun.save_array_to_csv(X_windows_train, path + 'X_train.csv')
 window_slasher_fun.save_array_to_csv(Y_windows_train, path + 'Y_train.csv')
-
-window_slasher_fun.save_array_to_csv(m, path + 'mean.csv')
 window_slasher_fun.save_array_to_csv(min, path + 'min.csv')
 window_slasher_fun.save_array_to_csv(max, path + 'max.csv')
-try:
-    with open(path + 'norm_factor.csv', mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([CONST_norm_factor])
-    print(f"Float value saved to {path + 'norm_factor.csv'}")
-except Exception as e:
-    print(f"An error occurred: {e}")
-
+window_slasher_fun.save_array_to_csv(np.array([lower, upper]), path + 'normalization_boundaries.csv')
 window_slasher_fun.save_array_to_csv(X_windows_test, path + 'X_test.csv')
 window_slasher_fun.save_array_to_csv(Y_windows_test, path + 'Y_test.csv')
+print("##### Data saved successfully. #####")

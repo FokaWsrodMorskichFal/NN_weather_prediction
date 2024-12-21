@@ -31,8 +31,8 @@ file_path = './data/city_attributes.csv'
 data_proc_fun.disp_map_chosen_cities(cities, file_path)
 
 # chosen weather features 
-features = ["temperature", "pressure", 
-            "wind_direction", "wind_speed"]
+features = ["temperature", "pressure", "humidity",
+            "wind_direction", "wind_speed", "weather_description"]
 
 # reading data for features
 # list of dataframes
@@ -131,7 +131,7 @@ while time_hour[check] != 0:
 while time_hour[(len(time_hour) - 1) - check2] != 23:
     check2 += 1 
 for i in range(f):
-    tmp_list[i] = arr[i][(check - 1):(arr.shape[1] - check2)]
+    tmp_list[i] = arr[i][(check):(arr.shape[1] - check2)]
 arr = np.array(tmp_list)
 print("##### Only full days present in data #####")
 print()

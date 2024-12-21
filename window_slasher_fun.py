@@ -18,9 +18,12 @@ def convert_date_time(df, day_ticks):
 
     return df
 
-def split_train_test_data(df, ratio):
+def split_train_test_data(df, ratio, CONST_day_ticks):
     dim = df.shape
-    return df[:][0:int(ratio*dim[0])], df[:][int(ratio*dim[0]):dim[0]]
+    threshold = int(ratio*dim[0])
+    if threshold%CONST_day_ticks != 0:
+        threshold = threshold - threshold%CONST_day_ticks
+    return df[:][0:threshold], df[:][threshold:dim[0]]
 
 def split_windows_X_Y(windows, x_bools, y_bools, m, n, day_ticks, window_tick_size):
     dims = windows.shape
