@@ -28,7 +28,7 @@ ALL_CITIES = ['Vancouver', 'Portland', 'San Francisco', 'Seattle',
 cities = ["Indianapolis", "Saint Louis", "Chicago", "Detroit", "Pittsburgh", 'Nashville']
 
 file_path = './data/city_attributes.csv'
-#data_proc_fun.disp_map_chosen_cities(cities, file_path)
+data_proc_fun.disp_map_chosen_cities(cities, file_path)
 
 # chosen weather features 
 features = ["temperature", "pressure", 
