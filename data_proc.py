@@ -25,15 +25,14 @@ ALL_CITIES = ['Vancouver', 'Portland', 'San Francisco', 'Seattle',
             'Nahariyya', 'Jerusalem']
 
 # choose cities
-cities = ["Indianapolis", "Saint Louis", "Chicago", "Detroit", "Pittsburgh", 'Nashville']
+cities = ["Indianapolis", "Chicago"]
 
 file_path = './data/city_attributes.csv'
-#data_proc_fun.disp_map_chosen_cities(cities, file_path)
+data_proc_fun.disp_map_chosen_cities(cities, file_path)
 
 # chosen weather features 
 features = ["temperature", "pressure", 
-            "wind_direction", "humidity", 
-            "weather_description", "wind_speed"]
+            "wind_direction", "wind_speed"]
 
 # reading data for features
 # list of dataframes

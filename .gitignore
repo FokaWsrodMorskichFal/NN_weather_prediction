@@ -1,0 +1,6 @@
+data/
+proc_data/
+models/
+plots/
+clean_norm_data/
+__pycache__/
