@@ -19,26 +19,35 @@ CONST_window_day_size = CONST_n+CONST_m
 CONST_window_tick_size = CONST_window_day_size * CONST_day_ticks
 
 # load data
-df = pd.DataFrame(read_csv('./proc_data/concat_clean_data_new.csv', sep=",", header=None))
-# delete first 11 hours because they come from incomplete day
-df = df[12:-1]
-# take every CONST_SKIP_HOURS hour( every CONST_SKIP_HOURS observation), to reduce the amount of data
+df = pd.DataFrame(read_csv('./proc_data/concat_clean_data.csv', sep="\t"))
+# basic adjustment
 df = df.reset_index(drop=True)
 df = df.apply(pd.to_numeric, errors='coerce')
-print(df.shape)
 dim = df.shape
 
+# seperate time from data
+enc_time = df[['enc_time_1', 'enc_time_2']]
+df = df.drop(["enc_time_1", "enc_time_2"], axis=1)
+print(df)
+print(enc_time)
+
 # split data in ratio
+# TO DO: splitting does not respect full days, split the data so that both X and Y consist of full
+# days from 00:00 to 23:00, ready to slash into windows
 X, Y = window_slasher_fun.split_train_test_data(df, 0.80)
 X = X.reset_index(drop=True)
 Y = Y.reset_index(drop=True)
 
 # params to normalize data
+# TO DO: normalization update, feature normalization reduces data to [-1, 1] interval. This contradicts 
+# new loss function implementation which involves logarithm function. For log function, temperature 
+# should be normalised to [0, 1]. 
 m = np.mean(X, 0)
 max = np.max(X, 0)
 min = np.min(X, 0)
 
 # normalizing data to [lower, upper]
+# TO DO: write this data to files, so further automation is possible
 lower = -1
 upper = 1
 for i in df.columns:
@@ -51,6 +60,7 @@ print(Y)
 x_bools = [True for _ in range(dim[1])]
 
 # determine which features are present in Y to predict
+# TO DO: using explicit indices is CRIMINAL
 # 0 - temperature
 # 3 - wind speed
 y_feats_num = [0, 3]
@@ -115,6 +125,7 @@ Y_windows_test = [None for _ in range(Y_temp_test.shape[0])]
 #np.array((Y_temp_test.shape[0], CONST_n*num_of_feat_Y))
 
 # get mean temperature and max wind speed
+# TO DO: generating bool variable which idicates if "strong wind" took place should also be possible
 for i in range(Y_temp_train.shape[0]):
     Y_windows_train[i] = np.array([np.mean(Y_temp_train[i][0:CONST_day_ticks]), 
                                     np.max(Y_wind_train[i][0:CONST_day_ticks]), 
@@ -140,6 +151,7 @@ print(Y_wind_test.shape)
 '''
 skip_hours = [False for _ in range(X_windows_train.shape[1])]
 for i in range(int(CONST_m*CONST_day_ticks/CONST_SKIP_HOURS)):
+    # TO DO: time is now encoded into 2 categories and is stored seperately from data
     # + 1 because there is the time variable indicating the week of the year 
     for j in range((CONST_NUM_FEATS*CONST_NUM_CITIES + 1)):
         skip_hours[i*(CONST_NUM_CITIES*CONST_NUM_FEATS + 1)*CONST_SKIP_HOURS + j] = True
