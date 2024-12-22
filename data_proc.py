@@ -25,14 +25,13 @@ ALL_CITIES = ['Vancouver', 'Portland', 'San Francisco', 'Seattle',
             'Nahariyya', 'Jerusalem']
 
 # choose cities
-cities = ["Indianapolis", "Chicago"]
+cities = ["Indianapolis", "Chicago", "Saint Louis", "Pittsburgh"]
 
 file_path = './data/city_attributes.csv'
 data_proc_fun.disp_map_chosen_cities(cities, file_path)
 
 # chosen weather features 
-features = ["temperature", "pressure", "humidity",
-            "wind_direction", "wind_speed", "weather_description"]
+features = ["temperature", "weather_description", "wind_speed", "wind_direction"]
 
 # reading data for features
 # list of dataframes
@@ -130,6 +129,8 @@ while time_hour[check] != 0:
     check += 1 
 while time_hour[(len(time_hour) - 1) - check2] != 23:
     check2 += 1 
+time_arr = time_arr[check:(arr.shape[1] - check2)]
+
 for i in range(f):
     tmp_list[i] = arr[i][(check):(arr.shape[1] - check2)]
 arr = np.array(tmp_list)
@@ -154,7 +155,7 @@ if "wind_direction" in features:
 
 print("Encoding days...")
 # getting datetime
-pd.to_datetime(pd.DataFrame( time_arr[0:(arr.shape[1])] )[0]).dt.hour
+#pd.to_datetime(pd.DataFrame( time_arr[0:(arr.shape[1])] )[0]).dt.hour
 # weeks
 weeks = pd.to_datetime(pd.DataFrame( time_arr[0:(arr.shape[1])] )[0]).dt.isocalendar().week
 
@@ -249,7 +250,7 @@ for i in range(1, c):
     cities_weather[0] = cities_weather[0].join(cities_weather[i])
 cities_weather[0] = cities_weather[0].join(encoded_days)
 
-cities_weather[0].to_csv(path + 'concat_clean_data.csv', sep="\t", index = False, float_format='%.3f')
+cities_weather[0].to_csv(path + 'concat_clean_data_temp_desc_wind_neighbors.csv', sep="\t", index = False, float_format='%.3f')
 
 print("##### All data successfully saved to files. #####")
 print()

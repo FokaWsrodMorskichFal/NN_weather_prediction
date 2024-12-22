@@ -15,7 +15,7 @@ import matplotlib.colors as mcolors
 if __name__ == "__main__":
     print("Loading data...")
     
-    path = "./clean_norm_data/new_feats/"
+    path = "./clean_norm_data/concat_clean_data_temp_desc_wind_neighbors/"
 
     X_train = read_csv(path + 'X_train.csv', sep=",", header=None, dtype=np.float32)
     Y_train = read_csv(path + 'Y_train.csv', sep=",", header=None, dtype=np.float32)
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     X_test = read_csv(path + 'X_test.csv', sep=",", header=None, dtype=np.float32)
     Y_test = read_csv(path + 'Y_test.csv', sep=",", header=None, dtype=np.float32)
     # read params to denormalize
-    mean = read_csv(path + 'mean.csv', header=None, dtype=np.float32)
+    norm_boundaries = read_csv(path + 'normalization_boundaries.csv', header=None, dtype=np.float32)
     min = read_csv(path + 'min.csv', header=None, dtype=np.float32)
     max = read_csv(path + 'max.csv', header=None, dtype=np.float32)
 
@@ -33,11 +33,9 @@ if __name__ == "__main__":
     X_test = np.array(X_test.apply(pd.to_numeric, errors='coerce'))
     Y_test = np.array(Y_test.apply(pd.to_numeric, errors='coerce'))
 
-    mean = np.array(mean.apply(pd.to_numeric, errors='coerce'))
+    norm_boundaries = np.array(norm_boundaries.apply(pd.to_numeric, errors='coerce'))
     min = np.array(min.apply(pd.to_numeric, errors='coerce'))
     max = np.array(max.apply(pd.to_numeric, errors='coerce'))
-
-    #print(min)
     
     if False:
         # for tests, reduce the dataset to 'end' instances
@@ -83,9 +81,9 @@ if __name__ == "__main__":
     input = X_train.shape[0]
     output = Y_train.shape[0]
 
-    if False:
+    if True:
         nn = ai_np.NeuralNetwork(
-            structure= [input, 4096, 2048, 2048, 1024, 64, output], 
+            structure= [input, 128, 128, 128, 64, 16, output], 
             activation='sigmoid', 
             last_layer_activation='tanh',
             biases_present = True
@@ -93,8 +91,9 @@ if __name__ == "__main__":
         print("Neural network created.")
     else:
         path_model = "./models/2nd_iter/"
-        path_weights = path_model + 'weights-new.npz'
-        path_biases = path_model + 'biases-new.npz'
+        #path_model = "./models/"
+        path_weights = path_model + 'weights-big2.npz'
+        path_biases = path_model + 'biases-big2.npz'
         weights = np.load(path_weights)
         biases = np.load(path_biases)
 
@@ -128,10 +127,16 @@ if __name__ == "__main__":
     #       numbers in each row correspond to: batch size, learning rate 
     #       and number of epochs for the particular stage 
     training_plan = [
-        [32, 0.1, 3]
+        [4, 0.01, 50],
+        [8, 0.002, 20]
     ]
 
     '''
+
+    ,
+        [16, 0.01, 80],
+        [16, 0.001, 30]
+
     [10, 0.1, 5],
         [8, 0.05, 8],
         [4, 0.05, 5],
@@ -183,32 +188,39 @@ if __name__ == "__main__":
     temp_test = Y_test[0]
     wind_test = Y_test[1]
 
+    lower = norm_boundaries[0]
+    upper = norm_boundaries[1]
+
     temp_test = (temp_test - lower)*(max[0] - min[0])/(upper - lower) + min[0]
-    wind_test = (wind_test - lower)*(max[3] - min[3])/(upper - lower) + min[3]
+    wind_test = (wind_test - lower)*(max[1] - min[1])/(upper - lower) + min[1]
 
     print("Temp. test:")
-    print(temp_test[0:10])
-    print(temp_test[10:20])
+    for i in range(8):
+        print(temp_test[i*4:(i+1)*4])
     print("Wind test:")
-    print(wind_test[0:10])
-    print(wind_test[10:20])
-    
+    for i in range(8):
+        print(wind_test[i*4:(i+1)*4])
     print("Y_pred shape: ", Y_pred.shape)
     temp_pred = Y_pred[0]
     wind_pred = Y_pred[1]
 
     temp_pred = (temp_pred - lower)*(max[0] - min[0])/(upper - lower) + min[0]
-    wind_pred = (wind_pred - lower)*(max[3] - min[3])/(upper - lower) + min[3]
+    wind_pred = (wind_pred - lower)*(max[1] - min[1])/(upper - lower) + min[1]
     
     print("Temp. prediction:")
-    print(temp_pred[0:10])
-    print(temp_pred[10:20])
+    for i in range(8):
+        print(temp_pred[i*4:(i+1)*4])
     print("Wind prediction:")
-    print(wind_pred[0:10])
-    print(wind_pred[10:20])
-
-    #acc=sum(Y_test==Y_pred)
-    #print('Accuracy: ', acc/len(Y_test) * 100, '%')
+    for i in range(8):
+        print(wind_pred[i*4:(i+1)*4])
+    
+    fig, ax = plt.subplots()
+    ax.scatter(range(len(temp_pred)), [temp for temp in temp_pred], c='r', s=10, label='temp_pred')
+    ax.scatter(range(len(temp_pred)), [temp for temp in temp_test], c='g', s=10, label='temp_test')    
+    plt.title("Temp")
+    plt.legend()
+    ax.grid(True)
+    plt.show()
 
     plot_path = './plots/'
     if True:
@@ -233,5 +245,5 @@ if __name__ == "__main__":
             plt.savefig(plot_path + 'w' + str(p) + '.png')
             #plt.show()
 
-    np.savez(f'./models/3rd_iter/weights-new.npz', *nn.weights)
-    np.savez(f'./models/3rd_iter/biases-new.npz', *nn.biases)
+    np.savez(f'./models/weights-simple2.npz', *nn.weights)
+    np.savez(f'./models/biases-simple2.npz', *nn.biases)

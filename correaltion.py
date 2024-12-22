@@ -29,7 +29,7 @@ def plot_correlation_heatmap(df, output_file="correlation_heatmap.png"):
 
 if __name__ == "__main__":
     # Load the DataFrame
-    df = pd.read_csv("./proc_data/concat_clean_data.csv", delimiter='\t')
+    df = pd.read_csv("./proc_data/concat_clean_data_temp_desc_wind.csv", delimiter='\t')
     
     # Generate the heatmap
     plot_correlation_heatmap(df)

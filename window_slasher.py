@@ -4,12 +4,8 @@ import pandas as pd
 import csv
 import window_slasher_fun
 
-CONST_NUM_CITIES = 2
-CONST_NUM_FEATS = 5
 CONST_SKIP_HOURS = 2
-
 CONST_day_ticks = 24
-CONST_norm_factor = 0.5
 #number of days based on which the forecast is made
 CONST_m = 3
 #number of days to forecast
@@ -19,10 +15,23 @@ CONST_window_day_size = CONST_n+CONST_m
 CONST_window_tick_size = CONST_window_day_size * CONST_day_ticks
 
 # load data
-df = pd.DataFrame(read_csv('./proc_data/concat_clean_data.csv', sep="\t"))
+df = pd.DataFrame(read_csv('./proc_data/concat_clean_data_temp_desc_wind_neighbors.csv', sep="\t"))
 # basic adjustment
 df = df.reset_index(drop=True)
 df = df.apply(pd.to_numeric, errors='coerce')
+
+# Obtaining CONST_NUM_CITIES and CONST_NUM_FEATS from the data
+cols = df.columns
+ind = cols[0].find('_')
+city_name = cols[0][0:ind]
+num_feats_tmp = 0
+for i in range(len(cols)):
+    if cols[i][0:ind] == city_name:
+        num_feats_tmp += 1
+    else:
+        break
+CONST_NUM_FEATS = num_feats_tmp
+CONST_NUM_CITIES = int((len(cols) - 2)/CONST_NUM_FEATS)
 
 # seperate time from data
 enc_time = df[['enc_time_1', 'enc_time_2']]
@@ -40,8 +49,6 @@ else:
 
 print("Splitting data into train and test set...")
 # split data in ratio
-# TO DO: splitting does not respect full days, split the data so that both X and Y consist of full
-# days from 00:00 to 23:00, ready to slash into windows
 X, Y = window_slasher_fun.split_train_test_data(df, 0.80, CONST_day_ticks)
 X = X.reset_index(drop=True)
 Y = Y.reset_index(drop=True)
@@ -156,8 +163,6 @@ Y_windows_test = pd.DataFrame(Y_windows_test)
 print("Skipping hours based on CONST_SKIP_HOURS to reduce data volume...")
 skip_hours = [False for _ in range(X_windows_train.shape[1])]
 for i in range(int(CONST_m*CONST_day_ticks/CONST_SKIP_HOURS)):
-    # TO DO: time is now encoded into 2 categories and is stored seperately from data
-    # + 1 because there is the time variable indicating the week of the year 
     for j in range((CONST_NUM_FEATS*CONST_NUM_CITIES)):
         skip_hours[i*(CONST_NUM_CITIES*CONST_NUM_FEATS)*CONST_SKIP_HOURS + j] = True
 
@@ -175,9 +180,9 @@ X_windows_train = np.append(X_windows_train, time_to_append_train, axis=1)
 X_windows_test = np.append(X_windows_test, time_to_append_test, axis=1)
 print("##### Encoded time appended to data. #####")
 print()
-
+print('Input size: ', X_windows_train.shape[1])
 print("Saving data to files...")
-path = './clean_norm_data/'
+path = './clean_norm_data/concat_clean_data_temp_desc_wind_neighbors/'
 window_slasher_fun.save_array_to_csv(X_windows_train, path + 'X_train.csv')
 window_slasher_fun.save_array_to_csv(Y_windows_train, path + 'Y_train.csv')
 window_slasher_fun.save_array_to_csv(min, path + 'min.csv')
