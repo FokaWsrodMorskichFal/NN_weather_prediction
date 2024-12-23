@@ -1,5 +1,18 @@
 import numpy as np
 import pandas as pd
+import csv
+
+def save_array_of_strings_to_csv(array, filename):
+    with open(filename, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        for item in array:
+            writer.writerow([item])
+
+def array_of_strings_display(arr, c, f):
+    for i in range(c):
+        for j in range(f):
+            print(arr[i*f + j], end="\t")
+        print()
 
 def convert_date_time(df, day_ticks):
     dims = df.shape
@@ -25,20 +38,11 @@ def split_train_test_data(df, ratio, CONST_day_ticks):
         threshold = threshold - threshold%CONST_day_ticks
     return df[:][0:threshold], df[:][threshold:dim[0]]
 
-def split_windows_X_Y(windows, x_bools, y_bools, m, n, day_ticks, window_tick_size):
+def split_windows_X_Y(windows, m, day_ticks, window_tick_size):
     dims = windows.shape
-    
-    x_mask = np.array([x_bools for _ in range(m*day_ticks)]).reshape(-1)
-    y_mask = np.array([y_bools for _ in range(n*day_ticks)]).reshape(-1)
 
     X_windows = np.array( [ windows[i][0:(m*day_ticks)] for i in range(dims[0]) ] )
     Y_windows = np.array( [ windows[i][(m*day_ticks):window_tick_size] for i in range(dims[0]) ] )
-
-    X_windows = X_windows.reshape(dims[0], -1)
-    Y_windows = Y_windows.reshape(dims[0], -1)
-
-    X_windows = np.array( [ X_windows[i][x_mask] for i in range(dims[0]) ] )
-    Y_windows = np.array( [ Y_windows[i][y_mask] for i in range(dims[0]) ] )
 
     return X_windows, Y_windows
 

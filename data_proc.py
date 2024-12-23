@@ -25,13 +25,14 @@ ALL_CITIES = ['Vancouver', 'Portland', 'San Francisco', 'Seattle',
             'Nahariyya', 'Jerusalem']
 
 # choose cities
+# city for which the predictions are made MUST BE FIRST in the list
 cities = ["Indianapolis", "Chicago", "Saint Louis", "Pittsburgh"]
 
 file_path = './data/city_attributes.csv'
 data_proc_fun.disp_map_chosen_cities(cities, file_path)
 
 # chosen weather features 
-features = ["temperature", "weather_description", "wind_speed", "wind_direction"]
+features = ["temperature", "pressure", "humidity", "wind_speed", "wind_direction"]
 
 # reading data for features
 # list of dataframes
@@ -250,7 +251,7 @@ for i in range(1, c):
     cities_weather[0] = cities_weather[0].join(cities_weather[i])
 cities_weather[0] = cities_weather[0].join(encoded_days)
 
-cities_weather[0].to_csv(path + 'concat_clean_data_temp_desc_wind_neighbors.csv', sep="\t", index = False, float_format='%.3f')
+cities_weather[0].to_csv(path + 'concat_clean_data_simulate_middle_day.csv', sep="\t", index = False, float_format='%.3f')
 
 print("##### All data successfully saved to files. #####")
 print()

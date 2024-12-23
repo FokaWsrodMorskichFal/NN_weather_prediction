@@ -22,15 +22,10 @@ def sigmoid_matrix_derivative(x):
     return m
 
 def leaky_ReLU(x):
-    return np.maximum(x, 0.5 * x)
+    return np.maximum(x, 0.1 * x)
 
 def leaky_ReLU_derivative(x):
-    def leaky_ReLU_derivative_lambda(x):
-        if x <= 0:
-            return 0.5
-        else:
-            return 1
-    return np.array(list(map(leaky_ReLU_derivative_lambda, x))).reshape(-1, 1)
+     return np.where(x > 0, 1, 0.1)
 
 def leaky_ReLU_matrix_derivative(x):
     temp = leaky_ReLU_derivative(x)
@@ -259,7 +254,7 @@ class NeuralNetwork:
         #B = (self.last_layer_activation(self.neurons[-1]) - output).T.reshape(int(self.BATCH_SIZE), int(self.structure[-1]), 1)
         #self.last_layer_activation(self.neurons[-1]).T.reshape(int(self.BATCH_SIZE), int(self.structure[-1]), 1) - output.reshape(int(self.BATCH_SIZE), int(self.structure[-1]), 1)
 
-        self.chain[-1] = np.matmul(A, (self.act_fun_neurons[self.layers] - output).T.reshape(int(self.BATCH_SIZE), int(self.structure[-1]), 1)).T[0]
+        self.chain[-1] = np.matmul(A, (2 * (self.act_fun_neurons[self.layers] - output)).T.reshape(int(self.BATCH_SIZE), int(self.structure[-1]), 1)).T[0]
         #time2 = time.time() - start_time2
         #print("chain[-1] comput. time VECTOR PRODIGY:", time2)
         
@@ -299,7 +294,7 @@ class NeuralNetwork:
         self.biases_gradient = [np.zeros((int(self.structure[i + 1]), 1), dtype = np.float32) for i in range(self.layers)]
         #print("update time: ", time.time() - start_time_update)
 
-    def perform_training(self, X_train, Y_train, X_test, Y_test, batch_size=10, learning_rate=0.5, number_of_epochs=100, monitor_w = 2, monitor_b = 1):
+    def perform_training(self, X_train, Y_train, X_test, Y_test, batch_size=10, learning_rate=0.5, number_of_epochs=100, weights_to_monitor = None, monitor_w = 0):
         
         # training parameters
         self.BATCH_SIZE = batch_size
@@ -319,18 +314,11 @@ class NeuralNetwork:
         #parameter_gradient_progress = np.zeros((monitor_w*self.layers, self.NUMBER_OF_EPOCHS*num_of_breaks))
 
         monitor_w = int(monitor_w)
-        weights_to_monitor = np.array(
-            [ 
-                [
-                    i, np.random.randint(0, self.structure[i+1]), np.random.randint(0, self.structure[i])
-                ] for i in range(self.layers) 
-                for _ in range(monitor_w) 
-            ]
-        )
+        weights_to_monitor = weights_to_monitor
 
         for j in range(self.NUMBER_OF_EPOCHS):
             epoch_start_time = time.time()
-            X_train, Y_train = data_shuffle(X_train, Y_train, True)
+            #X_train, Y_train = data_shuffle(X_train, Y_train, True)
             print("Epoch #", j+1)
             
             # IN BATCH LOOP, CODE HAS TO BE MINIMIZED
@@ -339,6 +327,7 @@ class NeuralNetwork:
             # DONT EVALUATE COST EVERY BATCH
             for b in range(len(epoch_break_points) - 1):
                 print("Batch #", epoch_break_points[b], "/", num_of_batches)
+                X_train, Y_train = data_shuffle(X_train, Y_train, True)
                 for i in range(epoch_break_points[b], epoch_break_points[b+1]):
                     #batch_start_time = time.time()
                     self.backward(X_train[:,batches[i]:batches[i+1]], Y_train[:,batches[i]:batches[i+1]])

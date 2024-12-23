@@ -15,17 +15,20 @@ import matplotlib.colors as mcolors
 if __name__ == "__main__":
     print("Loading data...")
     
-    path = "./clean_norm_data/concat_clean_data_temp_desc_wind_neighbors/"
+    path = "./clean_norm_data/concat_clean_data_simulate_middle_day/"
 
-    X_train = read_csv(path + 'X_train.csv', sep=",", header=None, dtype=np.float32)
-    Y_train = read_csv(path + 'Y_train.csv', sep=",", header=None, dtype=np.float32)
+    X_train = read_csv(path + 'X_train_middle.csv', sep=",", header=None, dtype=np.float32)
+    Y_train = read_csv(path + 'Y_train_middle.csv', sep=",", header=None, dtype=np.float32)
     
-    X_test = read_csv(path + 'X_test.csv', sep=",", header=None, dtype=np.float32)
-    Y_test = read_csv(path + 'Y_test.csv', sep=",", header=None, dtype=np.float32)
+    X_test = read_csv(path + 'X_test_middle.csv', sep=",", header=None, dtype=np.float32)
+    Y_test = read_csv(path + 'Y_test_middle.csv', sep=",", header=None, dtype=np.float32)
     # read params to denormalize
     norm_boundaries = read_csv(path + 'normalization_boundaries.csv', header=None, dtype=np.float32)
     min = read_csv(path + 'min.csv', header=None, dtype=np.float32)
     max = read_csv(path + 'max.csv', header=None, dtype=np.float32)
+
+    y_city_feats_middle = np.array(read_csv(path + 'y_city_feats_middle.csv', header=None)).reshape(-1)
+    y_city_feats_last = np.array(read_csv(path + 'y_city_feats_last.csv', header=None)).reshape(-1)
 
     X_train = np.array(X_train.apply(pd.to_numeric, errors='coerce'))
     Y_train = np.array(Y_train.apply(pd.to_numeric, errors='coerce'))
@@ -37,6 +40,9 @@ if __name__ == "__main__":
     min = np.array(min.apply(pd.to_numeric, errors='coerce'))
     max = np.array(max.apply(pd.to_numeric, errors='coerce'))
     
+    y_city_feats_middle = np.array(y_city_feats_middle)
+    y_city_feats_last = np.array(y_city_feats_last)
+
     if False:
         # for tests, reduce the dataset to 'end' instances
         # test - true, proper run - false
@@ -45,7 +51,6 @@ if __name__ == "__main__":
         Y_train = Y_train[0:end]
         X_test = X_test[0:end]
         Y_test = Y_test[0:end]
-    
 
     print("Data loaded.")
     print("Processing data...")
@@ -57,15 +62,6 @@ if __name__ == "__main__":
     X_test = X_test.T
     Y_train = Y_train.T
     Y_test = Y_test.T
-
-    # choose, prediction for the 2nd day
-    # or for the 1st day
-    if False:
-        Y_train = Y_train[2:-1]
-        Y_test = Y_test[2:-1]
-    else:
-        Y_train = Y_train[0:2]
-        Y_test = Y_test[0:2]
 
     print("Data processed.")
 
@@ -83,9 +79,9 @@ if __name__ == "__main__":
 
     if True:
         nn = ai_np.NeuralNetwork(
-            structure= [input, 128, 128, 128, 64, 16, output], 
+            structure= [input, 124, 124, 124, 124, 124, 124, 124, output], 
             activation='sigmoid', 
-            last_layer_activation='tanh',
+            last_layer_activation='sigmoid',
             biases_present = True
         )
         print("Neural network created.")
@@ -119,39 +115,36 @@ if __name__ == "__main__":
 
     print("Beginning NN training.")
 
-    # number of randomly selected weights from each layer user wishes to monitor
-    monitor_w = 1
-
     # planning the trainning for the NN
     #   each row represents one stage of the training
     #       numbers in each row correspond to: batch size, learning rate 
     #       and number of epochs for the particular stage 
     training_plan = [
-        [4, 0.01, 50],
-        [8, 0.002, 20]
+        [32, 0.1, 20],
+        [2, 0.1, 10],
+        #[4, 0.1, 5]
     ]
 
     '''
-
-    ,
-        [16, 0.01, 80],
-        [16, 0.001, 30]
-
-    [10, 0.1, 5],
-        [8, 0.05, 8],
-        [4, 0.05, 5],
-        [2, 0.01, 5]
-    ,
-        [8, 0.05, 3],
-        [4, 0.005, 5]
-    
     ,
         [16, 0.05, 0],
         [8, 0.005, 0]
     '''
 
-    costs = []
+    costs_list = []
     parameter_progress = []
+
+    # number of randomly selected weights from each layer user wishes to monitor
+    monitor_w = 1
+    # selecting weights
+    weights_to_monitor = np.array(
+        [ 
+            [
+                i, np.random.randint(0, nn.structure[i+1]), np.random.randint(0, nn.structure[i])
+            ] for i in range(nn.layers) for _ in range(monitor_w) 
+        ]
+    )
+
     for stage in range(len(training_plan)):
         print("Stage #", stage + 1, '/', len(training_plan))
         c, p = nn.perform_training(
@@ -162,18 +155,29 @@ if __name__ == "__main__":
             batch_size=training_plan[stage][0], 
             learning_rate=training_plan[stage][1], 
             number_of_epochs=training_plan[stage][2],
+            weights_to_monitor=weights_to_monitor,
             monitor_w=monitor_w
         )
-        costs.append(c)
+        costs_list.append(c)
         parameter_progress.append(p)
-        #print(np.array(c).shape)
-        #print(np.array(p).shape)
 
-    costs = np.array(list(itertools.chain(*costs)))
-    parameter_progress = np.array(list(itertools.chain(*parameter_progress)))
-    #print(costs.shape)
-    #print(parameter_progress.shape)
+    counter = 0
+    for arr in costs_list:
+        counter += len(arr)
 
+    costs = np.array((counter))
+    costs = np.array(list(itertools.chain(*costs_list)))
+    
+    #print(parameter_progress[0].shape)
+    #print(parameter_progress[0])
+    for i in range(1, len(parameter_progress)):
+        #print(parameter_progress[i].shape)
+        #print(parameter_progress[i])
+        parameter_progress[0] = np.concatenate((np.array(parameter_progress[0]), np.array(parameter_progress[i])), axis=1)
+    #print(parameter_progress[0])
+    #print(parameter_progress[0].shape)
+
+    #parameter_progress = np.array(list(itertools.chain(*parameter_progress)))
 
     print("NN training finished.")
     print("Validation...")
@@ -181,47 +185,44 @@ if __name__ == "__main__":
     Y_pred = nn.forward(X_test)
    
     # normalization params, normalizing to [-1, 1]
-    lower = -1
-    upper = 1
-
-    print("Y_test shape: ", Y_test.shape)
-    temp_test = Y_test[0]
-    wind_test = Y_test[1]
-
     lower = norm_boundaries[0]
     upper = norm_boundaries[1]
 
-    temp_test = (temp_test - lower)*(max[0] - min[0])/(upper - lower) + min[0]
-    wind_test = (wind_test - lower)*(max[1] - min[1])/(upper - lower) + min[1]
-
-    print("Temp. test:")
-    for i in range(8):
-        print(temp_test[i*4:(i+1)*4])
-    print("Wind test:")
-    for i in range(8):
-        print(wind_test[i*4:(i+1)*4])
+    # denormalize data
+    for i in range(Y_test.shape[0]):
+        Y_test[i] = (Y_test[i] - lower) * (max[i]-min[i]) / (upper - lower) + min[i]
+        Y_pred[i] = (Y_pred[i] - lower) * (max[i]-min[i]) / (upper - lower) + min[i]
+    
+    print("Y_test shape: ", Y_test.shape)
     print("Y_pred shape: ", Y_pred.shape)
-    temp_pred = Y_pred[0]
-    wind_pred = Y_pred[1]
+    
+    # plotting results and saving them
+    result_path = './middle_results/'
+    for i in range(len(y_city_feats_middle)):
+        fig, ax = plt.subplots()
+        ax.scatter(range(len(Y_pred[i])), [tmp for tmp in Y_pred[i]], c='r', s=10, 
+                    label=(y_city_feats_middle[i] + '_pred'))
+        ax.scatter(range(len(Y_test[i])), [tmp for tmp in Y_test[i]], c='g', s=10, 
+                    label=y_city_feats_middle[i] + '_test')    
+        
+        plt.title(y_city_feats_middle[i])
+        plt.legend()
+        ax.grid(True)
 
-    temp_pred = (temp_pred - lower)*(max[0] - min[0])/(upper - lower) + min[0]
-    wind_pred = (wind_pred - lower)*(max[1] - min[1])/(upper - lower) + min[1]
-    
-    print("Temp. prediction:")
-    for i in range(8):
-        print(temp_pred[i*4:(i+1)*4])
-    print("Wind prediction:")
-    for i in range(8):
-        print(wind_pred[i*4:(i+1)*4])
-    
+        plt.savefig(result_path + y_city_feats_middle[i] + '.png')
+        matplotlib.pyplot.close()
+        
     fig, ax = plt.subplots()
-    ax.scatter(range(len(temp_pred)), [temp for temp in temp_pred], c='r', s=10, label='temp_pred')
-    ax.scatter(range(len(temp_pred)), [temp for temp in temp_test], c='g', s=10, label='temp_test')    
-    plt.title("Temp")
+    ax.scatter(range(len(Y_pred[i])), [tmp1**2 + tmp2**2 for tmp1, tmp2 in zip(Y_pred[4], Y_pred[5])], c='r', s=10, 
+                    label=(y_city_feats_middle[i] + '_pred'))  
+        
+    plt.title(y_city_feats_middle[i])
     plt.legend()
     ax.grid(True)
-    plt.show()
 
+    plt.savefig(result_path + 'trig.png')
+    matplotlib.pyplot.close()
+    
     plot_path = './plots/'
     if True:
         fig, ax = plt.subplots()
@@ -236,7 +237,7 @@ if __name__ == "__main__":
         
         for p in range(nn.layers*monitor_w):
             fig, ax = plt.subplots()
-            ax.scatter(range(len(parameter_progress[p])), np.array(parameter_progress[p]), c='b', s=10, label='parameter')
+            ax.scatter(range(len(parameter_progress[0][p])), np.array(parameter_progress[0][p]), c='b', s=10, label='parameter')
             
             plt.title("Chosen parameters over epochs")
             plt.legend()
@@ -245,5 +246,5 @@ if __name__ == "__main__":
             plt.savefig(plot_path + 'w' + str(p) + '.png')
             #plt.show()
 
-    np.savez(f'./models/weights-simple2.npz', *nn.weights)
-    np.savez(f'./models/biases-simple2.npz', *nn.biases)
+    np.savez(f'./models/weights-simple.npz', *nn.weights)
+    np.savez(f'./models/biases-simple.npz', *nn.biases)
