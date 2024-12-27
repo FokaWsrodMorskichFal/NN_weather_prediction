@@ -244,16 +244,30 @@ print('Input size of the first model: ', X_train_middle.shape[1])
 print("Saving data to files...")
 path = './clean_norm_data/concat_clean_data_simulate_middle_day_test/'
 
+Y_train_middle = pd.DataFrame(Y_train_middle)
+Y_test_middle = pd.DataFrame(Y_test_middle)
+Y_train_middle.columns = y_city_feats_middle
+Y_test_middle.columns = y_city_feats_middle
+
+Y_train_last = pd.DataFrame(Y_train_last)
+Y_test_last = pd.DataFrame(Y_test_last)
+Y_train_last.columns = y_city_feats_last
+Y_test_last.columns = y_city_feats_last
+
 window_slasher_fun.save_array_to_csv(X_train_middle, path + 'X_train_middle.csv')
-window_slasher_fun.save_array_to_csv(Y_train_middle, path + 'Y_train_middle.csv')
+#window_slasher_fun.save_array_to_csv(Y_train_middle, path + 'Y_train_middle.csv')
+Y_train_middle.to_csv(path + 'Y_train_middle.csv', float_format='%.3f')
 print(X_train_middle.shape)
 print(np.array(Y_train_middle).shape)
 window_slasher_fun.save_array_to_csv(X_test_middle, path + 'X_test_middle.csv')
-window_slasher_fun.save_array_to_csv(Y_test_middle, path + 'Y_test_middle.csv')
+#window_slasher_fun.save_array_to_csv(Y_test_middle, path + 'Y_test_middle.csv')
+Y_test_middle.to_csv(path + 'Y_test_middle.csv', float_format='%.3f')
 print(X_test_middle.shape)
 print(np.array(Y_test_middle).shape)
-window_slasher_fun.save_array_to_csv(Y_train_last, path + 'Y_train_last.csv')
-window_slasher_fun.save_array_to_csv(Y_test_last, path + 'Y_test_last.csv')
+#window_slasher_fun.save_array_to_csv(Y_train_last, path + 'Y_train_last.csv')
+#window_slasher_fun.save_array_to_csv(Y_test_last, path + 'Y_test_last.csv')
+Y_train_last.to_csv(path + 'Y_train_last.csv', float_format='%.3f')
+Y_test_last.to_csv(path + 'Y_test_last.csv', float_format='%.3f')
 print(np.array(Y_train_last).shape)
 print(np.array(Y_test_last).shape)
 window_slasher_fun.save_array_to_csv(min, path + 'min.csv')
@@ -263,6 +277,8 @@ print(min.shape)
 print(max.shape)
 window_slasher_fun.save_array_of_strings_to_csv(y_city_feats_middle, path + 'y_city_feats_middle.csv')
 window_slasher_fun.save_array_of_strings_to_csv(y_city_feats_last, path + 'y_city_feats_last.csv')
+print(np.array(y_city_feats_middle))
+print(np.array(y_city_feats_last))
 print(np.array(y_city_feats_middle).shape)
 print(np.array(y_city_feats_last).shape)
 print("##### Data saved successfully. #####")
