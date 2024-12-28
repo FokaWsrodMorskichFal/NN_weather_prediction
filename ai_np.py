@@ -319,7 +319,7 @@ class NeuralNetwork:
         for j in range(self.NUMBER_OF_EPOCHS):
             epoch_start_time = time.time()
             #X_train, Y_train = data_shuffle(X_train, Y_train, True)
-            # print("Epoch #", j+1)
+            print("Epoch #", j+1)
             
             # IN BATCH LOOP, CODE HAS TO BE MINIMIZED
             # CRUCIAL PART OF THE CODE FOR THE PERFORMANCE

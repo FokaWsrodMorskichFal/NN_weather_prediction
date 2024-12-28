@@ -2,6 +2,7 @@ import ai_np
 import numpy as np  
 import copy
 import pandas as pd
+import pickle
 
 
 class NeuralNetwork(ai_np.NeuralNetwork):
@@ -9,16 +10,19 @@ class NeuralNetwork(ai_np.NeuralNetwork):
         if last_layer_activation not in ['tanh', 'sigmoid', 'softmax']:
             raise ValueError('Invalid last_layer_activation')
         self.last_layer_activation_name = last_layer_activation
+        self.activation_name = activation
         self.created_normalization_functions = False
         super().__init__(structure, biases_present, activation, last_layer_activation)
 
 
-    def create_normalization_functions(self, X, y):
+    def calculate_normalization_parameters(self, X, y):
         self.min_y = np.min(y, axis = 1)
         self.max_y = np.max(y, axis = 1)
         self.mean_x = np.mean(X, axis = 1)
         self.std_x = np.std(X, axis = 1)
+        self.create_normalization_functions()
 
+    def create_normalization_functions(self):
         def one_hot_encode(y):
             y_one_hot = np.zeros((y.size, y.max()+1))
             y_one_hot[np.arange(y.size), y] = 1
@@ -33,7 +37,7 @@ class NeuralNetwork(ai_np.NeuralNetwork):
             """
             Denormalize y to be between 0 and 1
             """
-            return y * (self.max_y - self.min_y) + self.min_y
+            return (y.T * (self.max_y - self.min_y) + self.min_y).T
         def normalize_y_sigmoid(y: np.ndarray):
             """
             Normalize y to be between 0 and 1
@@ -75,6 +79,8 @@ class NeuralNetwork(ai_np.NeuralNetwork):
     def __call__(self, X_df, X_col_names, Y_col_names = None):
         if Y_col_names is None:
             Y_col_names = list("y" + str(i) for i in range(self.structure[-1]))
+        if X_col_names == -1:
+            X_col_names = list(X_df.columns)
         self.validate_dataframes(X_df, X_col_names)
         new_x = X_df[X_col_names].values.T
         y = self.new_forward(new_x)
@@ -141,12 +147,43 @@ class NeuralNetwork(ai_np.NeuralNetwork):
         new_x = copy.deepcopy(X_df[X_col_names].values.T)
         new_y = copy.deepcopy(Y_df[Y_col_names].values.T)
 
-        self.create_normalization_functions(new_x, new_y)
+        self.calculate_normalization_parameters(new_x, new_y)
         new_x = self.normalize_x(new_x)
         new_y = self.normalize_y(new_y)
 
         self.perform_training(new_x, new_y, learning_rate = learning_rate, number_of_epochs = epochs, batch_size = batch_size)
         
+    def save(self, path):
+        if not self.created_normalization_functions:
+            raise ValueError('Normalization functions not created')
+        
+        with open(path, 'wb') as f:
+            pickle.dump(
+            {"weights": self.weights,
+            "biases": self.biases,
+            "activation": self.activation_name,
+            "last_layer_activation": self.last_layer_activation_name,
+            "x_mean": self.mean_x,
+            "x_std": self.std_x,
+            "y_min": self.min_y,
+            "y_max": self.max_y,
+            "structure": self.structure }, f
+        )
+            
+    def load(self, path):
+        with open(path, 'rb') as f:
+            data = pickle.load(f)
+            self.weights = data["weights"]
+            self.biases = data["biases"]
+            self.activation_name = data["activation"]
+            self.last_layer_activation_name = data["last_layer_activation"]
+            self.mean_x = data["x_mean"]
+            self.std_x = data["x_std"]
+            self.min_y = data["y_min"]
+            self.max_y = data["y_max"]
+            self.structure = data["structure"]
+            self.created_normalization_functions = True
+        self.create_normalization_functions()
 
     
 
