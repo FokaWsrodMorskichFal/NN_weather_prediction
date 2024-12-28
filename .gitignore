@@ -4,3 +4,4 @@ models/
 plots/
 clean_norm_data/
 __pycache__/
+*.pkl
