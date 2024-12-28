@@ -294,7 +294,7 @@ class NeuralNetwork:
         self.biases_gradient = [np.zeros((int(self.structure[i + 1]), 1), dtype = np.float32) for i in range(self.layers)]
         #print("update time: ", time.time() - start_time_update)
 
-    def perform_training(self, X_train, Y_train, X_test, Y_test, batch_size=10, learning_rate=0.5, number_of_epochs=100, weights_to_monitor = None, monitor_w = 0):
+    def perform_training(self, X_train, Y_train, X_test = None, Y_test = None, batch_size=10, learning_rate=0.5, number_of_epochs=100, weights_to_monitor = None, monitor_w = 0):
         
         # training parameters
         self.BATCH_SIZE = batch_size
@@ -319,14 +319,14 @@ class NeuralNetwork:
         for j in range(self.NUMBER_OF_EPOCHS):
             epoch_start_time = time.time()
             #X_train, Y_train = data_shuffle(X_train, Y_train, True)
-            print("Epoch #", j+1)
+            # print("Epoch #", j+1)
             
             # IN BATCH LOOP, CODE HAS TO BE MINIMIZED
             # CRUCIAL PART OF THE CODE FOR THE PERFORMANCE
             # DONT USE append(), DONT GET WEIGHTS VALUES EVERY BATCH, 
             # DONT EVALUATE COST EVERY BATCH
             for b in range(len(epoch_break_points) - 1):
-                print("Batch #", epoch_break_points[b], "/", num_of_batches)
+                #print("Batch #", epoch_break_points[b], "/", num_of_batches)
                 X_train, Y_train = data_shuffle(X_train, Y_train, True)
                 for i in range(epoch_break_points[b], epoch_break_points[b+1]):
                     #batch_start_time = time.time()
@@ -336,7 +336,8 @@ class NeuralNetwork:
                     #print("batch time: ", time_batch)
                 
                 # NN learning monitor
-                costs[j*num_of_breaks + b] = self.cost(X_test, Y_test)
+                if X_test is not None and Y_test is not None:
+                    costs[j*num_of_breaks + b] = self.cost(X_test, Y_test)
 
                 for lay in range(self.layers):
                     for m in range(monitor_w): 
@@ -344,7 +345,7 @@ class NeuralNetwork:
                         parameter_progress[lay*monitor_w + m][j*num_of_breaks + b] = self.weights[watch_weight[0]][watch_weight[1]][watch_weight[2]]
                         #parameter_gradient_progress[lay+m][j*num_of_breaks + b] = self.weights_gradient[watch_weight[0]][watch_weight[1]][watch_weight[2]]
 
-            print("loss fun. on test: ", costs[(j + 1)*num_of_breaks - 1])
-            print("epoch time: ", time.time() - epoch_start_time)
+            # print("loss fun. on test: ", costs[(j + 1)*num_of_breaks - 1])
+            # print("epoch time: ", time.time() - epoch_start_time)
 
         return costs, parameter_progress
