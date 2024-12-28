@@ -147,6 +147,8 @@ class NeuralNetwork(ai_np.NeuralNetwork):
         new_x = copy.deepcopy(X_df[X_col_names].values.T)
         new_y = copy.deepcopy(Y_df[Y_col_names].values.T)
 
+        self.validate(new_x, new_y)
+
         self.calculate_normalization_parameters(new_x, new_y)
         new_x = self.normalize_x(new_x)
         new_y = self.normalize_y(new_y)
