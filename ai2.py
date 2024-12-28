@@ -1,10 +1,11 @@
 import ai_np
 import numpy as np  
 import copy
+import pandas as pd
 
 
 class NeuralNetwork(ai_np.NeuralNetwork):
-    def __init__(self, structure, biases_present=True, activation='sigmoid', last_layer_activation='tanh'):
+    def __init__(self, structure, biases_present=True, activation='sigmoid', last_layer_activation='sigmoid'):
         if last_layer_activation not in ['tanh', 'sigmoid', 'softmax']:
             raise ValueError('Invalid last_layer_activation')
         self.last_layer_activation_name = last_layer_activation
@@ -12,7 +13,7 @@ class NeuralNetwork(ai_np.NeuralNetwork):
         super().__init__(structure, biases_present, activation, last_layer_activation)
 
 
-    def create_normalization_functions(self, X, Y):
+    def create_normalization_functions(self, X, y):
         self.min_y = np.min(y, axis = 1)
         self.max_y = np.max(y, axis = 1)
         self.mean_x = np.mean(X, axis = 1)
@@ -71,46 +72,82 @@ class NeuralNetwork(ai_np.NeuralNetwork):
         self.denormalize_x = denormalize_x
         self.created_normalization_functions = True
 
-    def __call__(self, X):
+    def __call__(self, X_df, X_col_names, Y_col_names = None):
+        if Y_col_names is None:
+            Y_col_names = list("y" + str(i) for i in range(self.structure[-1]))
+        self.validate_dataframes(X_df, X_col_names)
+        new_x = X_df[X_col_names].values.T
+        y = self.new_forward(new_x)
+        return pd.DataFrame(y.T, columns = Y_col_names)
+
+    def new_forward(self, X):
         if not self.created_normalization_functions:
             raise ValueError('Normalization functions not created')
+        self.validate(X)
         new_x = copy.deepcopy(X)
         new_x = self.normalize_x(new_x)
-        new_x = new_x.reshape((new_x.shape[0], new_x.shape[1], 1))
-        output = self.denormalize_y(super().forward(new_x))
-        return output.reshape((output.shape[0], output.shape[1]))
-
-    def train(self, X: np.ndarray, Y: np.ndarray, learning_rate=0.1, epochs=100):
+        return self.denormalize_y(super().__call__(new_x))
+    
+    def validate(self, X, Y = None):
+        if type(X) is not np.ndarray:
+            raise ValueError('Invalid X type, should be np.ndarray')
+        if len(X.shape) != 2:
+            raise ValueError(
+                """
+                Invalid X shape, shape should be (n, m), 
+                where n is the number of features and m is the number of samples
+                """
+            )
         if X.shape[0] != self.structure[0]:
-            raise ValueError('Invalid input shape')
-        if Y.shape[0] != self.structure[-1]:
-            raise ValueError('Invalid output shape')
-        new_x: np.ndarray = copy.deepcopy(X)
-        new_y: np.ndarray = copy.deepcopy(Y)
+            raise ValueError('Invalid X shape, number of features should be equal to the number of input nodes')
+        if Y is not None:
+            if type(Y) is not np.ndarray:
+                raise ValueError('Invalid Y type, should be np.ndarray')
+            if len(Y.shape) != 2:
+                raise ValueError(
+                    """
+                    Invalid Y shape, shape should be (n, m), 
+                    where n is the number of features and m is the number of samples
+                    """
+                )
+            if Y.shape[0] != self.structure[-1]:
+                raise ValueError('Invalid Y shape, number of features should be equal to the number of output nodes')
+            if X.shape[1] != Y.shape[1]:
+                raise ValueError('Invalid X and Y shape, number of samples should be equal')
+
+
+    def validate_dataframes(self, X_df, X_col_names, Y_df = None, Y_col_names = None):
+        if type(X_df) is not pd.DataFrame:
+            raise ValueError('Invalid X_df type, should be pd.DataFrame')
+
+        
+        if type(X_col_names) is not list:
+            raise ValueError('Invalid X_col_names type, should be list')
+        
+        if Y_df is not None:
+            if type(Y_df) is not pd.DataFrame:
+                raise ValueError('Invalid Y_df type, should be pd.DataFrame')
+            if type(Y_col_names) is not list:
+                raise ValueError('Invalid Y_col_names type, should be list')
+
+    def train(self, X_df, Y_df, X_col_names, Y_col_names, learning_rate=0.1, epochs=100, batch_size=1):
+        if X_col_names == -1:
+                X_col_names = list(X_df.columns)
+        if Y_col_names == -1:
+            Y_col_names = list(Y_df.columns)
+
+        self.validate_dataframes(X_df, X_col_names, Y_df, Y_col_names)
+        
+        new_x = copy.deepcopy(X_df[X_col_names].values.T)
+        new_y = copy.deepcopy(Y_df[Y_col_names].values.T)
+
         self.create_normalization_functions(new_x, new_y)
         new_x = self.normalize_x(new_x)
         new_y = self.normalize_y(new_y)
-        new_x = new_x.reshape((new_x.shape[1],new_x.shape[0], 1))
-        new_y = new_y.reshape((new_y.shape[1],new_y.shape[0], 1))
-        print("X")
-        print(new_x)
-        print("Y")
-        print(new_y)
-        self.perform_training(new_x, new_y, learning_rate = learning_rate, number_of_epochs = epochs)
+
+        self.perform_training(new_x, new_y, learning_rate = learning_rate, number_of_epochs = epochs, batch_size = batch_size)
         
 
-        
-        
-        
-
-    
-
-
-if __name__ == "__main__":
-    X = np.array([[0, 0, 1, 1], [0, 1, 0, 1]])
-    y = np.array([[1, 0, 0, 1]])
-    A = NeuralNetwork([2, 2, 1])
-    A.train(X, y, learning_rate=1, epochs=100)
     
 
     
