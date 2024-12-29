@@ -6,7 +6,7 @@ import pandas as pd
 import pickle
 
 torch.manual_seed(23)
-epochs = 249
+epochs = 159 #159
 column = "Ind_wind"
 
 # Normalize using Torch
@@ -48,11 +48,11 @@ class NeuralNet(nn.Module):
     def __init__(self, input_size, output_size):
         super(NeuralNet, self).__init__()
         self.model = nn.Sequential(
-            nn.Linear(input_size, 128),
+            nn.Linear(input_size, 256),
             nn.ReLU(),
-            nn.Linear(128, 128),
+            nn.Linear(256, 256),
             nn.ReLU(),
-            nn.Linear(128, 16),
+            nn.Linear(256, 16),
             nn.ReLU(),
             nn.Linear(16, output_size)
         )
@@ -71,6 +71,9 @@ if __name__ == "__main__":
     path = "./clean_norm_data/concat_clean_data_simulate_middle_day_test/"
     X = pd.read_csv(path + "X_train_middle.csv", header=None)
     Y = pd.read_csv(path + "Y_train_last.csv", index_col=0)
+    X_test = pd.read_csv(path + "X_test_middle.csv", header=None)
+    Y_test = pd.read_csv(path + "Y_test_last.csv", index_col=0)
+    Y_test = Y_test[[column]]
     Y = Y[[column]]
 
 
@@ -78,14 +81,28 @@ if __name__ == "__main__":
     X_tensor = torch.tensor(X.values, dtype=torch.float32)
     Y_tensor = torch.tensor(Y.values, dtype=torch.float32)
 
+    X_test_tensor = torch.tensor(X_test.values, dtype=torch.float32)
+    Y_test_tensor = torch.tensor(Y_test.values, dtype=torch.float32)
+
     # Normalize data
     normalizer = Normalizer()
     normalizer.fit(X_tensor, Y_tensor)
     X_normalized, Y_normalized = normalizer.transform(X_tensor, Y_tensor)
+    X_test_normalized, Y_test_normalized = normalizer.transform(X_test_tensor, Y_test_tensor)
+
 
     # Prepare dataset with normalized data
-    dataset = CustomDataset(pd.DataFrame(X_normalized.numpy()), pd.DataFrame(Y_normalized.numpy()))
+    dataset = CustomDataset(
+        pd.DataFrame(X_normalized.numpy()), 
+        pd.DataFrame(Y_normalized.numpy())
+        )
+    test_dataset = CustomDataset(
+        pd.DataFrame(X_test_normalized.numpy()), 
+        pd.DataFrame(Y_test_normalized.numpy())
+        )
+
     dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
 
     # Initialize the model, loss function, and optimizer
@@ -97,6 +114,7 @@ if __name__ == "__main__":
 
     # Training loop
     for epoch in range(epochs):
+        model.train()
         for batch_X, batch_Y in dataloader:
             # Forward pass
             predictions = model(batch_X)
@@ -106,20 +124,20 @@ if __name__ == "__main__":
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+        
+        # model.eval()  # Set the model to evaluation mode
+        # test_loss = 0
+        # with torch.no_grad():
+        #     for batch_X, batch_Y in test_dataloader:
+        #         predictions = model(batch_X)
+        #         batch_loss = criterion(predictions, batch_Y)
+        #         test_loss += batch_loss.item()
 
-        print(f"Epoch [{epoch+1}/{epochs}], Loss: {loss.item():4f}")
+        # print(f"Epoch [{epoch+1}/{epochs}], Loss: {test_loss:4f}")
+        print(f"Epoch [{epoch+1}/{epochs}], Loss: {loss.item()}")
 
     # Save the trained model
     torch.save(model.state_dict(), "model.pth")
     with open("normalizer.pkl", "wb") as f:
         pickle.dump(normalizer, f)
     print("Model training complete and saved as model.pth")
-
-    # Example of using the trained model for predictions
-    model.eval()  # Set the model to evaluation mode
-    with torch.no_grad():
-        sample_X = torch.tensor(X.values[:5], dtype=torch.float32)  # First 5 samples from X
-        sample_X_normalized = (sample_X - normalizer.mean_X) / normalizer.std_X  # Normalize sample_X
-        predictions = model(sample_X_normalized)  # Predictions in normalized space
-        predictions_denormalized = normalizer.inverse_transform_Y(predictions)  # Denormalize
-        print("Denormalized Predictions:", predictions_denormalized)
