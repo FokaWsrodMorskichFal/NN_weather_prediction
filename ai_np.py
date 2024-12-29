@@ -168,7 +168,7 @@ class NeuralNetwork:
         return self.last_layer_activation(np.matmul(self.weights[self.layers - 1], data) + self.biases[self.layers - 1])
 
     def cost(self, input, output):
-        return np.sum((self(input).reshape(-1) - output.reshape(-1)) ** 2)
+        return np.sum((self.forward(input).reshape(-1) - output.reshape(-1)) ** 2)
     '''
     def shake(self, impact, ratio):
         for i in range(self.layers):
@@ -319,7 +319,7 @@ class NeuralNetwork:
         for j in range(self.NUMBER_OF_EPOCHS):
             epoch_start_time = time.time()
             #X_train, Y_train = data_shuffle(X_train, Y_train, True)
-            print("Epoch #", j+1)
+            print(f"Epoch # {j+1}, cost: {self.cost(X_train, Y_train):4f}")
             
             # IN BATCH LOOP, CODE HAS TO BE MINIMIZED
             # CRUCIAL PART OF THE CODE FOR THE PERFORMANCE

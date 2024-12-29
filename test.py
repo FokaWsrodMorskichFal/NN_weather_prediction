@@ -12,7 +12,10 @@ if __name__ == "__main__":
     AI.load("model.pkl")
     Y_pred = AI(X_test, -1, ["Ind_temp"])
     Y = Y_test.merge(Y_pred, left_index=True, right_index=True, suffixes=('_real', '_pred'))
-    Y["temp_diff"] = (Y["Ind_temp_real"] - Y["Ind_temp_pred"]).abs()
-    plt.scatter(Y.index, Y["temp_diff"], c = "blue", label = "temp_diff")
+    Y["is good?"] = (Y["Ind_temp_real"] - Y["Ind_temp_pred"]).abs() < 2
+    print(Y["is good?"].mean())
+    plt.scatter(Y.index, Y["Ind_temp_real"], c = "blue", label = "real")
+    plt.scatter(Y.index, Y["Ind_temp_pred"], c = "red", label = "pred")
+
     plt.show()
 

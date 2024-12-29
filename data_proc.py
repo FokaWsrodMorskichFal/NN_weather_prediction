@@ -26,8 +26,7 @@ ALL_CITIES = ['Vancouver', 'Portland', 'San Francisco', 'Seattle',
 
 # choose cities
 # city for which the predictions are made MUST BE FIRST in the list
-cities = ["Indianapolis", "Chicago", "Saint Louis", "Pittsburgh"]
-
+cities = ["Indianapolis", "Saint Louis", "Kansas City", "Chicago", "Pittsburgh", "Philadelphia"]
 file_path = './data/city_attributes.csv'
 data_proc_fun.disp_map_chosen_cities(cities, file_path)
 
