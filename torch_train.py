@@ -6,6 +6,8 @@ import pandas as pd
 import pickle
 
 torch.manual_seed(23)
+epochs = 249
+column = "Ind_wind"
 
 # Normalize using Torch
 class Normalizer:
@@ -69,7 +71,7 @@ if __name__ == "__main__":
     path = "./clean_norm_data/concat_clean_data_simulate_middle_day_test/"
     X = pd.read_csv(path + "X_train_middle.csv", header=None)
     Y = pd.read_csv(path + "Y_train_last.csv", index_col=0)
-    Y = Y[["Ind_temp"]]
+    Y = Y[[column]]
 
 
     # Convert data to torch tensors
@@ -94,7 +96,6 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # Training loop
-    epochs = 250
     for epoch in range(epochs):
         for batch_X, batch_Y in dataloader:
             # Forward pass
