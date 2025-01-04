@@ -136,7 +136,18 @@ class NeuralNetwork(ai_np.NeuralNetwork):
             if type(Y_col_names) is not list:
                 raise ValueError('Invalid Y_col_names type, should be list')
 
-    def train(self, X_df, Y_df, X_col_names, Y_col_names, learning_rate=0.1, epochs=100, batch_size=1):
+    def train(
+            self, 
+            X_df, 
+            Y_df, 
+            X_col_names, 
+            Y_col_names, 
+            learning_rate=0.1, 
+            epochs=100, 
+            batch_size=1, 
+            X_test = None, 
+            Y_test = None
+            ):
         if X_col_names == -1:
                 X_col_names = list(X_df.columns)
         if Y_col_names == -1:
@@ -153,7 +164,25 @@ class NeuralNetwork(ai_np.NeuralNetwork):
         new_x = self.normalize_x(new_x)
         new_y = self.normalize_y(new_y)
 
-        self.perform_training(new_x, new_y, learning_rate = learning_rate, number_of_epochs = epochs, batch_size = batch_size)
+        if X_test is not None and Y_test is not None:
+            x_test_new = copy.deepcopy(X_test[X_col_names].values.T)
+            y_test_new = copy.deepcopy(Y_test[Y_col_names].values.T)
+            self.validate(x_test_new, y_test_new)
+            x_test_new = self.normalize_x(x_test_new)
+            y_test_new = self.normalize_y(y_test_new)
+        else:
+            x_test_new = None
+            y_test_new = None
+        self.perform_training(
+            new_x, 
+            new_y,
+            X_test=x_test_new,
+            Y_test=y_test_new,
+            learning_rate = learning_rate, 
+            number_of_epochs = epochs, 
+            batch_size = batch_size,
+
+            )
         
     def save(self, path):
         if not self.created_normalization_functions:

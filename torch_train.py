@@ -5,9 +5,9 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import pickle
 
-torch.manual_seed(23)
-epochs = 159 #159
-column = "Ind_wind"
+torch.manual_seed(45)
+epochs = 26# 42, 82, 95, 
+columns = ["Ind_wind"]
 
 # Normalize using Torch
 class Normalizer:
@@ -48,13 +48,13 @@ class NeuralNet(nn.Module):
     def __init__(self, input_size, output_size):
         super(NeuralNet, self).__init__()
         self.model = nn.Sequential(
-            nn.Linear(input_size, 256),
+            nn.Linear(input_size, 128),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(256, 16),
+            nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(16, output_size)
+            nn.Linear(128, output_size)
         )
 
     def forward(self, x):
@@ -70,11 +70,11 @@ if __name__ == "__main__":
 
     path = "./clean_norm_data/concat_clean_data_simulate_middle_day_test/"
     X = pd.read_csv(path + "X_train_middle.csv", header=None)
-    Y = pd.read_csv(path + "Y_train_last.csv", index_col=0)
+    Y = pd.read_csv(path + "Y_train_middle.csv", index_col=0)
     X_test = pd.read_csv(path + "X_test_middle.csv", header=None)
-    Y_test = pd.read_csv(path + "Y_test_last.csv", index_col=0)
-    Y_test = Y_test[[column]]
-    Y = Y[[column]]
+    Y_test = pd.read_csv(path + "Y_test_middle.csv", index_col=0)
+    Y_test = Y_test[columns]
+    Y = Y[columns]
 
 
     # Convert data to torch tensors
@@ -125,16 +125,16 @@ if __name__ == "__main__":
             loss.backward()
             optimizer.step()
         
-        # model.eval()  # Set the model to evaluation mode
-        # test_loss = 0
-        # with torch.no_grad():
-        #     for batch_X, batch_Y in test_dataloader:
-        #         predictions = model(batch_X)
-        #         batch_loss = criterion(predictions, batch_Y)
-        #         test_loss += batch_loss.item()
+        model.eval()  # Set the model to evaluation mode
+        test_loss = 0
+        with torch.no_grad():
+            for batch_X, batch_Y in test_dataloader:
+                predictions = model(batch_X)
+                batch_loss = criterion(predictions, batch_Y)
+                test_loss += batch_loss.item()
 
-        # print(f"Epoch [{epoch+1}/{epochs}], Loss: {test_loss:4f}")
-        print(f"Epoch [{epoch+1}/{epochs}], Loss: {loss.item()}")
+        print(f"Epoch [{epoch+1}/{epochs}], Loss: {test_loss:4f}")
+        #print(f"Epoch [{epoch+1}/{epochs}], Loss: {loss.item()}")
 
     # Save the trained model
     torch.save(model.state_dict(), "model.pth")
