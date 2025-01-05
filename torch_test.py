@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-city = "Pit"
+city = "Tel"
 col_name = "wind"
 column = f"{city}_{col_name}"
 output_size = 1

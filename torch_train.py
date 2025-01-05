@@ -16,14 +16,19 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import pickle
 
+seed = 10
+torch.manual_seed(seed)
 
-torch.manual_seed(45)
+city = "Bee"
+col_name = "wind"
 
-cities_number = 6
+cities_number = 3
+epochs = 1
 input_size = 216 * cities_number + 2
-column = "Pit_wind"
-epochs = 2
-net_architecture = [input_size, 128, 32, 1]
+net_architecture = [input_size, 64, 64,  1]
+
+
+column = f"{city}_{col_name}"
 
 # Normalize using Torch
 class Normalizer:
@@ -129,8 +134,8 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # Training loop
-    min_cost = 1000000
-    min_cost_epoch = 0
+    max_accuracy = 0
+    max_accuracy_epoch = 0
     for epoch in range(epochs):
         model.train()
         for batch_X, batch_Y in dataloader:
@@ -144,22 +149,29 @@ if __name__ == "__main__":
             optimizer.step()
         
         model.eval()  # Set the model to evaluation mode
-        test_loss = 0
         with torch.no_grad():
-            for batch_X, batch_Y in test_dataloader:
-                predictions = model(batch_X)
-                batch_loss = criterion(predictions, batch_Y)
-                test_loss += batch_loss.item()
+            predictions = model(X_test_normalized) #predictions normalized
+            predictions_denormalized = normalizer.inverse_transform_Y(predictions)  # Denormalize
+            Y_pred = pd.DataFrame(predictions_denormalized.numpy(), columns=[column])
+            Y_pred.index = Y_test.index
+            if col_name == "temp":
+                Y_pred["is good?"] = (Y_pred - Y_test).abs() < 2
+                accuracy = Y_pred["is good?"].mean()
+                print(f"Epoch: {epoch + 1}, accuracy: {accuracy}")
+            if col_name == "wind":
+                Y_pred["is good?"] = (Y_pred > 6) == (Y_test > 6)
+                accuracy = Y_pred["is good?"].mean()
+                print(f"Epoch: {epoch + 1}, accuracy: {accuracy}")
+            if accuracy > max_accuracy:
+                max_accuracy = accuracy
+                max_accuracy_epoch = epoch + 1
 
-        print(f"Epoch [{epoch+1}/{epochs}], Loss: {test_loss:4f}")
-        if test_loss < min_cost:
-            min_cost = test_loss
-            min_cost_epoch = epoch
-        #print(f"Epoch [{epoch+1}/{epochs}], Loss: {loss.item()}")
 
     # Save the trained model
-    print(f"Minimum cost: {min_cost} at epoch {min_cost_epoch + 1}")
     torch.save(model.state_dict(), f"./models/model_{column}.pth")
     with open(f"./models/normalizer_{column}.pkl", "wb") as f:
         pickle.dump(normalizer, f)
-    print("Model training complete and saved as model.pth")
+    if col_name == "wind":
+        print(f"Klasa mniejszosciowa/wiekszosciowa: {(Y_test[column] > 6).mean()}")
+    print(f"Max accuracy: {max_accuracy} at epoch {max_accuracy_epoch}")
+    print(f"seed: {seed}, architecture: {net_architecture}")  
