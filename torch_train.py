@@ -5,7 +5,9 @@ Then run file "window_slasher.py". This should create data required for training
 path "./clean_norm_data/concat_clean_data_simulate_middle_day_test/".
 Then run this file to train the model, which will be saved in the ./models/ directory,
 together with the normalizer object. Remember, to change
- number of cities to the number of cities you had selected in "data_proc.py".
+number of cities to the number of cities you had selected in "data_proc.py".
+I the file ./models/cities.json we store the names of the cities,
+that predictions rely on.
 '''
 import torch
 import torch.nn as nn
@@ -17,18 +19,20 @@ import pickle
 
 torch.manual_seed(45)
 
-cities_number = 6
+cities_number = 4
 input_size = 216 * cities_number + 2
-column = "Ind_temp"
-epochs = 2
+column = "Los_wind"
+epochs = 4
+net_architecture = [input_size, 32, 32, 1]
 
 # Normalize using Torch
 class Normalizer:
-    def __init__(self):
+    def __init__(self, net_architecture):
         self.mean_X = None
         self.std_X = None
         self.mean_Y = None
         self.std_Y = None
+        self.net_architecture = net_architecture
 
     def fit(self, X, Y):
         self.mean_X = torch.mean(X, dim=0)
@@ -58,17 +62,14 @@ class CustomDataset(Dataset):
     
 # Define a neural network
 class NeuralNet(nn.Module):
-    def __init__(self, input_size, output_size):
+    def __init__(self, structure):
         super(NeuralNet, self).__init__()
-        self.model = nn.Sequential(
-            nn.Linear(input_size, 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Linear(128, 16),
-            nn.ReLU(),
-            nn.Linear(16, output_size)
-        )
+        layers = []
+        for i in range(len(structure) - 1):
+            layers.append(nn.Linear(structure[i], structure[i + 1]))
+            if i < len(structure) - 2:  # Add ReLU only between layers, not after the output
+                layers.append(nn.ReLU())
+        self.model = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.model(x)
@@ -98,7 +99,9 @@ if __name__ == "__main__":
     Y_test_tensor = torch.tensor(Y_test.values, dtype=torch.float32)
 
     # Normalize data
-    normalizer = Normalizer()
+    normalizer = Normalizer(
+        net_architecture=net_architecture
+    )
     normalizer.fit(X_tensor, Y_tensor)
     X_normalized, Y_normalized = normalizer.transform(X_tensor, Y_tensor)
     X_test_normalized, Y_test_normalized = normalizer.transform(X_test_tensor, Y_test_tensor)
@@ -121,7 +124,7 @@ if __name__ == "__main__":
     # Initialize the model, loss function, and optimizer
     input_size = X.shape[1]  # Number of features in X
     output_size = Y.shape[1]  # Number of targets in Y
-    model = NeuralNet(input_size, output_size)
+    model = NeuralNet(normalizer.net_architecture)
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
@@ -155,7 +158,7 @@ if __name__ == "__main__":
         #print(f"Epoch [{epoch+1}/{epochs}], Loss: {loss.item()}")
 
     # Save the trained model
-    print(f"Minimum cost: {min_cost} at epoch {min_cost_epoch}")
+    print(f"Minimum cost: {min_cost} at epoch {min_cost_epoch + 1}")
     torch.save(model.state_dict(), f"./models/model_{column}.pth")
     with open(f"./models/normalizer_{column}.pkl", "wb") as f:
         pickle.dump(normalizer, f)

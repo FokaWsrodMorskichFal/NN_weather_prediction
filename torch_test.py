@@ -1,18 +1,25 @@
-from torch_train import NeuralNet, Normalizer, cities_number, input_size
+from torch_train import NeuralNet, Normalizer
 import torch
 import pickle
 import pandas as pd
 import matplotlib.pyplot as plt
 
-column = "Ind_temp"
+
+city = "Los"
+col_name = "wind"
+column = f"{city}_{col_name}"
 output_size = 1
-model = NeuralNet(input_size, output_size)
+
+
+with open(f"./models/normalizer_{column}.pkl", "rb") as f:
+    normalizer = pickle.load(f)
+
+model = NeuralNet(normalizer.net_architecture)
 
 model_path = f"./models/model_{column}.pth"  # Path to the saved model
 model.load_state_dict(torch.load(model_path))
 
-with open(f"./models/normalizer_{column}.pkl", "rb") as f:
-    normalizer = pickle.load(f)
+
 
 path = "./clean_norm_data/concat_clean_data_simulate_middle_day_test/"
 Y_test = pd.read_csv(path + "Y_test_last.csv", index_col=0)
@@ -31,13 +38,13 @@ with torch.no_grad():
     Y_pred = df = pd.DataFrame(predictions_denormalized.numpy(), columns=[column])
     Y_pred.index = Y_test.index
     Y = Y_test.merge(Y_pred, left_index=True, right_index=True, suffixes=('_real', '_pred'))
-    if "Ind_temp" == column:
-        Y["is good?"] = (Y["Ind_temp_real"] - Y["Ind_temp_pred"]).abs() < 2
+    if col_name == "temp":
+        Y["is good?"] = (Y[f"{column}_real"] - Y[f"{column}_pred"]).abs() < 2
         print(f"Accuracy: {Y["is good?"].mean()}")
 
-    if "Ind_wind" == column:
-        Y["is good?"] = (Y["Ind_wind_pred"] > 6) == (Y["Ind_wind_real"] > 6)
-        print(f"Klasa mniejszosciowa/wiekszosciowa: {(Y["Ind_wind_real"] > 6).mean()}")
+    if col_name == "wind":
+        Y["is good?"] = (Y[f"{column}_pred"] > 6) == (Y[f"{column}_real"] > 6)
+        print(f"Klasa mniejszosciowa/wiekszosciowa: {(Y[f"{column}_real"] > 6).mean()}")
         print(f"Accuracy: {Y["is good?"].mean()}")
 
     plt.scatter(Y.index, Y[column + "_real"], c = "blue", label = "real")
