@@ -19,11 +19,11 @@ import pickle
 
 torch.manual_seed(45)
 
-cities_number = 4
+cities_number = 6
 input_size = 216 * cities_number + 2
-column = "Los_wind"
-epochs = 4
-net_architecture = [input_size, 32, 32, 1]
+column = "Pit_wind"
+epochs = 2
+net_architecture = [input_size, 128, 32, 1]
 
 # Normalize using Torch
 class Normalizer:
