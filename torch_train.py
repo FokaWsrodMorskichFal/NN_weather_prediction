@@ -1,3 +1,12 @@
+'''
+This file creates a model to predict weather in the given city.
+First run files "data_proc.py" with selected cities in line 29.
+Then run file "window_slasher.py". This should create data required for training in the
+path "./clean_norm_data/concat_clean_data_simulate_middle_day_test/".
+Then run this file to train the model, which will be saved in the ./models/ directory,
+together with the normalizer object. Remember, to change
+ number of cities to the number of cities you had selected in "data_proc.py".
+'''
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -5,9 +14,13 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import pickle
 
+
 torch.manual_seed(45)
-epochs = 26# 42, 82, 95, 
-columns = ["Ind_wind"]
+
+cities_number = 6
+input_size = 216 * cities_number + 2
+column = "Ind_temp"
+epochs = 2
 
 # Normalize using Torch
 class Normalizer:
@@ -52,9 +65,9 @@ class NeuralNet(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(128, 128),
+            nn.Linear(128, 16),
             nn.ReLU(),
-            nn.Linear(128, output_size)
+            nn.Linear(16, output_size)
         )
 
     def forward(self, x):
@@ -70,11 +83,11 @@ if __name__ == "__main__":
 
     path = "./clean_norm_data/concat_clean_data_simulate_middle_day_test/"
     X = pd.read_csv(path + "X_train_middle.csv", header=None)
-    Y = pd.read_csv(path + "Y_train_middle.csv", index_col=0)
+    Y = pd.read_csv(path + "Y_train_last.csv", index_col=0)
     X_test = pd.read_csv(path + "X_test_middle.csv", header=None)
-    Y_test = pd.read_csv(path + "Y_test_middle.csv", index_col=0)
-    Y_test = Y_test[columns]
-    Y = Y[columns]
+    Y_test = pd.read_csv(path + "Y_test_last.csv", index_col=0)
+    Y_test = Y_test[[column]]
+    Y = Y[[column]]
 
 
     # Convert data to torch tensors
@@ -113,6 +126,8 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # Training loop
+    min_cost = 1000000
+    min_cost_epoch = 0
     for epoch in range(epochs):
         model.train()
         for batch_X, batch_Y in dataloader:
@@ -134,10 +149,14 @@ if __name__ == "__main__":
                 test_loss += batch_loss.item()
 
         print(f"Epoch [{epoch+1}/{epochs}], Loss: {test_loss:4f}")
+        if test_loss < min_cost:
+            min_cost = test_loss
+            min_cost_epoch = epoch
         #print(f"Epoch [{epoch+1}/{epochs}], Loss: {loss.item()}")
 
     # Save the trained model
-    torch.save(model.state_dict(), "model.pth")
-    with open("normalizer.pkl", "wb") as f:
+    print(f"Minimum cost: {min_cost} at epoch {min_cost_epoch}")
+    torch.save(model.state_dict(), f"./models/model_{column}.pth")
+    with open(f"./models/normalizer_{column}.pkl", "wb") as f:
         pickle.dump(normalizer, f)
     print("Model training complete and saved as model.pth")
