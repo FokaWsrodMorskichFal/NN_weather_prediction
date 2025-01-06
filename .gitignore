@@ -1,6 +1,4 @@
 data/
-proc_data/
 plots/
-clean_norm_data/
 __pycache__/
 *.txt
