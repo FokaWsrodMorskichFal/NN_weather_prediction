@@ -66,31 +66,54 @@ print("Checking for NaN values in data...")
 print("Replacing all NaN with new values...")
 
 NaN_counter = 0
+
 for j in range(c): 
-    #print(cities[j])
+    # Iterate over cities
     for i in range(f):
-        #print(features[i])
+        # Iterate over features
         indices = data[i][cities[j]][data[i].isna()[cities[j]] == True].index
         check = data[i].isna()[cities[j]].astype(int).sum()
-        counter = 0 
-        for ind in indices:
-            val = 0
-            iter = 0
-            while math.isnan(data[i][cities[j]][ind - iter]):
-                iter += 1
-            val = data[i][cities[j]][ind - iter]
-            arr[i][ind - 1][j] = val
-            counter += 1
+        counter = 0
         
+        for ind in indices:
+            val = None
+            iter = 0
+            
+            # Ensure `ind - iter` is a valid position
+            while ind - iter >= 0:
+                try:
+                    current_value = data[i][cities[j]].iloc[ind - iter]
+                    if not math.isnan(current_value):
+                        val = current_value
+                        break
+                except IndexError:
+                    break  # Out of bounds, stop checking
+                iter += 1
+            
+            # Check if a valid value was found
+            if val is not None:
+                arr[i][ind - 1][j] = val
+                counter += 1
+            else:
+                print(f"Warning: Unable to find a valid replacement for NaN at index {ind}")
+        
+        # Create a temporary DataFrame from `arr`
         tmp_data = pd.DataFrame(arr[i])
+        
+        # Debugging information
         # print('NaN objects found: ', check) 
         # print('Objects replaced with a new value: ', counter) 
-        NaN_counter += tmp_data.isna()[j].astype(int).sum()
+        
+        NaN_counter += tmp_data.isna().iloc[:, j].astype(int).sum()
+
+# Check if all NaNs were handled
 if NaN_counter == 0:
     print('##### All NaN objects simulated. #####')
 else:
     print("##### There was an Error while removing NaNs. #####")
+
 print()
+
 
 # new value is written to arr, not dataframe, so getting rid of NaNs does not work perfectly yet. The loop
 # with writing the new value to the array is called more times than necessary, but it works
