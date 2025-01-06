@@ -31,7 +31,7 @@
     "Pho": ["Phoenix", "Los Angeles", "San Diego", "Albuquerque", "Dallas"],
     "San Fr": ["San Francisco", "Las Vegas", "Denver"],
     "San Di": ["San Diego", "Phoenix", "Los Angeles"],
-    "Housto": ["Houston", "San Antonio", "Dallas", "Jacksonville"],
+    "Hou": ["Houston", "San Antonio", "Dallas", "Jacksonville"],
     "San An": ["San Antonio", "Houston"],
-    "Miami": ["Miami", "Jacksonville", "San Antonio"]
+    "Mia": ["Miami", "Jacksonville", "San Antonio"]
 }
