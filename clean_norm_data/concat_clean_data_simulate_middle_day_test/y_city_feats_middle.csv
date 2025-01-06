@@ -1,18 +1,36 @@
-Miami_temp
-Miami_pres
-Miami_humi
-Miami_wind
-Miami_dir1
-Miami_dir2
-Jackso_temp
-Jackso_pres
-Jackso_humi
-Jackso_wind
-Jackso_dir1
-Jackso_dir2
-San An_temp
-San An_pres
-San An_humi
-San An_wind
-San An_dir1
-San An_dir2
+Ind_temp
+Ind_pres
+Ind_humi
+Ind_wind
+Ind_dir1
+Ind_dir2
+Sai_temp
+Sai_pres
+Sai_humi
+Sai_wind
+Sai_dir1
+Sai_dir2
+Kan_temp
+Kan_pres
+Kan_humi
+Kan_wind
+Kan_dir1
+Kan_dir2
+Chi_temp
+Chi_pres
+Chi_humi
+Chi_wind
+Chi_dir1
+Chi_dir2
+Pit_temp
+Pit_pres
+Pit_humi
+Pit_wind
+Pit_dir1
+Pit_dir2
+Phi_temp
+Phi_pres
+Phi_humi
+Phi_wind
+Phi_dir1
+Phi_dir2

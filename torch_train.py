@@ -19,13 +19,13 @@ import pickle
 seed = 12
 torch.manual_seed(seed)
 
-city = "Miami"
-col_name = "temp"
+city = "Ind"
+col_name = "wind"
 
-cities_number = 3
-epochs = 2
+cities_number = 6
+epochs = 26
 input_size = 216 * cities_number + 2
-net_architecture = [input_size, 64, 64,  1]
+net_architecture = [input_size, 32, 32,  1]
 
 
 column = f"{city}_{col_name}"

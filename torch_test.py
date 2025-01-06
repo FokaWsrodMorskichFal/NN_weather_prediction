@@ -5,8 +5,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-city = "Miami"
-col_name = "temp"
+city = "Ind"
+col_name = "wind"
 column = f"{city}_{col_name}"
 output_size = 1
 
