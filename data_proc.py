@@ -26,7 +26,7 @@ ALL_CITIES = ['Vancouver', 'Portland', 'San Francisco', 'Seattle',
 
 # choose cities
 # city for which the predictions are made MUST BE FIRST in the list
-cities = ["Beersheba", "Jerusalem", "Eilat"]
+cities = ["Vancouver"]
 file_path = './data/city_attributes.csv'
 data_proc_fun.disp_map_chosen_cities(cities, file_path)
 
@@ -242,7 +242,7 @@ for i in range(c):
     #short_city_feat = copy.deepcopy(short_features)
     #short_city_feat = [cities[i] + feat for feat in short_features]
     cities_weather[i] = cities_weather[i].T.reset_index(drop = True).T
-    cities_weather[i].columns = [cities[i][:3] + '_' + feat[:4] for feat in features]
+    cities_weather[i].columns = [cities[i][:6] + '_' + feat[:4] for feat in features]
 
 print("Saving processed data to files...")
 path = "./proc_data/"

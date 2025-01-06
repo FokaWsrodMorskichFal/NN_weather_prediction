@@ -16,14 +16,14 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import pickle
 
-seed = 10
+seed = 12
 torch.manual_seed(seed)
 
-city = "Bee"
-col_name = "wind"
+city = "Miami"
+col_name = "temp"
 
 cities_number = 3
-epochs = 1
+epochs = 2
 input_size = 216 * cities_number + 2
 net_architecture = [input_size, 64, 64,  1]
 
