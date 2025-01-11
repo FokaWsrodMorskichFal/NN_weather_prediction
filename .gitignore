@@ -2,3 +2,5 @@ data/
 plots/
 __pycache__/
 *.txt
+clean_norm_data/
+proc_data/
