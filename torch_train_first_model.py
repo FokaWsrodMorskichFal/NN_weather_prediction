@@ -20,12 +20,12 @@ seed = 12
 torch.manual_seed(seed)
 
 city = "Ind"
-col_name = "wind"
+col_name = "temp"
 
-cities_number = 6
-epochs = 26
+cities_number = 4
+epochs = 20
 input_size = 216 * cities_number + 2
-net_architecture = [input_size, 32, 32,  1]
+net_architecture = [input_size, 128, 128,  1]
 
 
 column = f"{city}_{col_name}"
@@ -74,6 +74,7 @@ class NeuralNet(nn.Module):
             layers.append(nn.Linear(structure[i], structure[i + 1]))
             if i < len(structure) - 2:  # Add ReLU only between layers, not after the output
                 layers.append(nn.ReLU())
+                layers.append(nn.Dropout(p=0.1, inplace = False))
         self.model = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -89,9 +90,9 @@ if __name__ == "__main__":
 
     path = "./clean_norm_data/concat_clean_data_simulate_middle_day_test/"
     X = pd.read_csv(path + "X_train_middle.csv", header=None)
-    Y = pd.read_csv(path + "Y_train_last.csv", index_col=0)
+    Y = pd.read_csv(path + "Y_train_middle.csv", index_col=0)
     X_test = pd.read_csv(path + "X_test_middle.csv", header=None)
-    Y_test = pd.read_csv(path + "Y_test_last.csv", index_col=0)
+    Y_test = pd.read_csv(path + "Y_test_middle.csv", index_col=0)
     Y_test = Y_test[[column]]
     Y = Y[[column]]
 
@@ -168,8 +169,8 @@ if __name__ == "__main__":
 
 
     # Save the trained model
-    torch.save(model.state_dict(), f"./models/model_{column}.pth")
-    with open(f"./models/normalizer_{column}.pkl", "wb") as f:
+    torch.save(model.state_dict(), f"./models/mini_models/model_{column}.pth")
+    with open(f"./models/mini_models/normalizer_{column}.pkl", "wb") as f:
         pickle.dump(normalizer, f)
     if col_name == "wind":
         print(f"Klasa mniejszosciowa/wiekszosciowa: {(Y_test[column] > 6).mean()}")

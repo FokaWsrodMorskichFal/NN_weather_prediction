@@ -26,7 +26,7 @@ ALL_CITIES = ['Vancouver', 'Portland', 'San Francisco', 'Seattle',
 
 # choose cities
 # city for which the predictions are made MUST BE FIRST in the list
-cities = ["Indianapolis", "Saint Louis", "Kansas City", "Chicago", "Pittsburgh", "Philadelphia"]
+cities = ["Indianapolis", "Saint Louis", "Kansas City", "Pittsburgh"]
 letters_number = 3
 
 

@@ -1,4 +1,4 @@
-from torch_train import NeuralNet, Normalizer
+from torch_train_first_model import NeuralNet, Normalizer
 import torch
 import pickle
 import pandas as pd
