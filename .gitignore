@@ -4,3 +4,5 @@ __pycache__/
 *.txt
 clean_norm_data/
 proc_data/
+big_data/
+*.csv
