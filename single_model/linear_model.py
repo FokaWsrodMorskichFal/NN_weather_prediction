@@ -6,8 +6,6 @@ column_to_predict = "avg_temp_day_5"
 columns_to_use = [
     "temperature",
     "wind_speed",
-    
-    
     ]
 
 if __name__ == "__main__":

@@ -15,20 +15,30 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import pickle
+import numpy as np
 
 seed = 12
 torch.manual_seed(seed)
+np.random.seed(seed)
 
-city = "Ind"
-col_name = "temp"
+column_to_predict = "avg_temp_day_4"
+columns_to_use = [
+    "temperature",
+    "pressure",
+    ]
 
-cities_number = 4
+hours = 4
+
+time_points = 72 // hours
 epochs = 20
-input_size = 216 * cities_number + 2
-net_architecture = [input_size, 128, 128,  1]
+time = False
+input_size = len(columns_to_use) * time_points
+if time:
+    input_size += 2
+    columns_to_use.append("time_encoding")
+net_architecture = [input_size, 32, 1]
 
 
-column = f"{city}_{col_name}"
 
 # Normalize using Torch
 class Normalizer:
@@ -74,7 +84,7 @@ class NeuralNet(nn.Module):
             layers.append(nn.Linear(structure[i], structure[i + 1]))
             if i < len(structure) - 2:  # Add ReLU only between layers, not after the output
                 layers.append(nn.ReLU())
-                layers.append(nn.Dropout(p=0.1, inplace = False))
+                #layers.append(nn.Dropout(p=0.1, inplace = False))
         self.model = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -88,13 +98,19 @@ class NeuralNet(nn.Module):
 if __name__ == "__main__":
     
 
-    path = "./clean_norm_data/concat_clean_data_simulate_middle_day_test/"
-    X = pd.read_csv(path + "X_train_middle.csv", header=None)
-    Y = pd.read_csv(path + "Y_train_middle.csv", index_col=0)
-    X_test = pd.read_csv(path + "X_test_middle.csv", header=None)
-    Y_test = pd.read_csv(path + "Y_test_middle.csv", index_col=0)
-    Y_test = Y_test[[column]]
-    Y = Y[[column]]
+    train = pd.read_csv("./big_data/new_train.csv")
+    test = pd.read_csv("./big_data/new_test.csv")
+
+    X = train[[column for column in train.columns if any(s in column for s in columns_to_use)]]
+    X_test = test[[column for column in test.columns if any(s in column for s in columns_to_use)]]
+
+    shuffled_indices = np.random.permutation(X.index)
+    X = X.loc[shuffled_indices]
+
+
+    Y = train[[column_to_predict]]
+    Y = Y.loc[shuffled_indices]
+    Y_test = test[[column_to_predict]]
 
 
     # Convert data to torch tensors
@@ -153,14 +169,10 @@ if __name__ == "__main__":
         with torch.no_grad():
             predictions = model(X_test_normalized) #predictions normalized
             predictions_denormalized = normalizer.inverse_transform_Y(predictions)  # Denormalize
-            Y_pred = pd.DataFrame(predictions_denormalized.numpy(), columns=[column])
+            Y_pred = pd.DataFrame(predictions_denormalized.numpy(), columns=[column_to_predict])
             Y_pred.index = Y_test.index
-            if col_name == "temp":
+            if "temp" in column_to_predict:
                 Y_pred["is good?"] = (Y_pred - Y_test).abs() < 2
-                accuracy = Y_pred["is good?"].mean()
-                print(f"Epoch: {epoch + 1}, accuracy: {accuracy}")
-            if col_name == "wind":
-                Y_pred["is good?"] = (Y_pred > 6) == (Y_test > 6)
                 accuracy = Y_pred["is good?"].mean()
                 print(f"Epoch: {epoch + 1}, accuracy: {accuracy}")
             if accuracy > max_accuracy:
@@ -169,10 +181,8 @@ if __name__ == "__main__":
 
 
     # Save the trained model
-    torch.save(model.state_dict(), f"./models/mini_models/model_{column}.pth")
-    with open(f"./models/mini_models/normalizer_{column}.pkl", "wb") as f:
+    torch.save(model.state_dict(), f"./models/mini_models/model.pth")
+    with open(f"./models/mini_models/normalizer.pkl", "wb") as f:
         pickle.dump(normalizer, f)
-    if col_name == "wind":
-        print(f"Klasa mniejszosciowa/wiekszosciowa: {(Y_test[column] > 6).mean()}")
     print(f"Max accuracy: {max_accuracy} at epoch {max_accuracy_epoch}")
     print(f"seed: {seed}, architecture: {net_architecture}")  

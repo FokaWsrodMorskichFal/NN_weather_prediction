@@ -1,5 +1,11 @@
 import pandas as pd
 
+
+
+hours = 4
+
+
+
 if __name__ == "__main__":
     train_data = pd.read_csv('./big_data/train.csv', sep = ',')
     new_train_frame = pd.DataFrame()
@@ -29,7 +35,6 @@ if __name__ == "__main__":
 
 
     # obliczanie średnich wartości dla wszystkich atrybutów
-    hours = 1
 
     for atribute in ['humidity', 'temperature', 'wind_speed', 'pressure']:
         for i in range(72 // hours):
