@@ -32,8 +32,7 @@ hours = 4
 time_points = 72 // hours
 epochs = 23
 time = False
-save_predictions = False
-input_size = len(columns_to_use) * time_points
+input_size = len(columns_to_use) * time_points + 1
 if time:
     input_size += 2
     columns_to_use.append("time_encoding")
@@ -102,11 +101,14 @@ if __name__ == "__main__":
     train = pd.read_csv("./big_data/new_train.csv")
     test = pd.read_csv("./big_data/new_test.csv")
 
-    #old_predictions = pd.read_csv("./big_data/predictions.csv", sep = ";", index_col = 0)
-    #old_predictions.rename(columns = {"avg_temp_day_4": "avg_temperature_mid_day"}, inplace = True)
-    #train = pd.concat([train, old_predictions], axis = 1)
+    old_predictions_train = pd.read_csv("./big_data/predictions_train.csv", sep = ";", index_col = 0)
+    old_predictions_train.rename(columns = {"avg_temp_day_4": "avg_temperature_mid_day"}, inplace = True)
+    train = pd.concat([train, old_predictions_train], axis = 1)
 
-    print(train.columns)
+    old_predictions_test = pd.read_csv("./big_data/predictions_test.csv", sep = ";", index_col = 0)
+    old_predictions_test.rename(columns = {"avg_temp_day_4": "avg_temperature_mid_day"}, inplace = True)
+    test = pd.concat([test, old_predictions_test], axis = 1)
+
 
     X = train[[column for column in train.columns if any(s in column for s in columns_to_use)]]
     X_test = test[[column for column in test.columns if any(s in column for s in columns_to_use)]]
@@ -187,18 +189,7 @@ if __name__ == "__main__":
                 max_accuracy_epoch = epoch + 1
 
 
-    # Save the trained model
-    if save_predictions:
-        Y_train_pred = normalizer.inverse_transform_Y(model(X_normalized))
-        Y_test_pred = normalizer.inverse_transform_Y(model(X_test_normalized))
-
-        Y_train_pred = pd.DataFrame(Y_train_pred.detach().numpy(), columns=[column_to_predict])
-        Y_test_pred = pd.DataFrame(Y_test_pred.detach().numpy(), columns=[column_to_predict])
-
-
-        Y_train_pred.to_csv(f"./big_data/predictions_train.csv", sep = ";")
-        Y_test_pred.to_csv(f"./big_data/predictions_test.csv", sep = ";")
-        torch.save(model.state_dict(), f"./models/mini_models/model.pth")
+    torch.save(model.state_dict(), f"./models/mini_models/model.pth")
     with open(f"./models/mini_models/normalizer.pkl", "wb") as f:
         pickle.dump(normalizer, f)
     print(f"Max accuracy: {max_accuracy} at epoch {max_accuracy_epoch}")
