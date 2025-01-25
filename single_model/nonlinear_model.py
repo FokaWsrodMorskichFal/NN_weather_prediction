@@ -30,7 +30,7 @@ columns_to_use = [
 hours = 4
 
 time_points = 72 // hours
-epochs = 23
+epochs = 12
 time = False
 save_predictions = False
 input_size = len(columns_to_use) * time_points
@@ -171,7 +171,7 @@ if __name__ == "__main__":
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        
+        max_accuracy = 0
         model.eval()  # Set the model to evaluation mode
         with torch.no_grad():
             predictions = model(X_test_normalized) #predictions normalized
@@ -182,13 +182,18 @@ if __name__ == "__main__":
                 Y_pred["is good?"] = (Y_pred - Y_test).abs() < 2
                 accuracy = Y_pred["is good?"].mean()
                 print(f"Epoch: {epoch + 1}, accuracy: {accuracy}")
+            if "wind" in column_to_predict:
+                Y_pred["is good?"] = (Y_pred > 6) == (Y_test > 6)
+                accuracy = Y_pred["is good?"].mean()
+                print(f"Epoch: {epoch + 1}, accuracy: {accuracy}")
             if accuracy > max_accuracy:
                 max_accuracy = accuracy
                 max_accuracy_epoch = epoch + 1
 
 
+
     # Save the trained model
-    if save_predictions:
+    if True:
         Y_train_pred = normalizer.inverse_transform_Y(model(X_normalized))
         Y_test_pred = normalizer.inverse_transform_Y(model(X_test_normalized))
 
@@ -198,8 +203,8 @@ if __name__ == "__main__":
 
         Y_train_pred.to_csv(f"./big_data/predictions_train.csv", sep = ";")
         Y_test_pred.to_csv(f"./big_data/predictions_test.csv", sep = ";")
-        torch.save(model.state_dict(), f"./models/mini_models/model.pth")
-    with open(f"./models/mini_models/normalizer.pkl", "wb") as f:
+        torch.save(model.state_dict(), f"./big_data/models/model_{column_to_predict}.pth")
+    with open(f"./big_data/models/normalizer_{column_to_predict}.pkl", "wb") as f:
         pickle.dump(normalizer, f)
     print(f"Max accuracy: {max_accuracy} at epoch {max_accuracy_epoch}")
     print(f"seed: {seed}, architecture: {net_architecture}")  
