@@ -85,7 +85,6 @@ class NeuralNet(nn.Module):
 
 # Example Data (replace with your actual data)
 if __name__ == "__main__":
-    
 
     path = "./clean_norm_data/concat_clean_data_simulate_middle_day_test/"
     X = pd.read_csv(path + "X_train_middle.csv", header=None)

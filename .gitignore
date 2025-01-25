@@ -2,3 +2,6 @@ data/
 plots/
 __pycache__/
 *.txt
+models/mini_models/
+big_data/
+*.csv
