@@ -21,7 +21,7 @@ seed = 12
 torch.manual_seed(seed)
 np.random.seed(seed)
 
-column_to_predict = "avg_temp_day_5"
+column_to_predict = "max_wind_day_5"
 columns_to_use = [
     "temperature",
     "pressure",
