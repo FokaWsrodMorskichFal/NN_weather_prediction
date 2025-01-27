@@ -10,7 +10,6 @@ def main(city, col_name):
 
 
     with open(f"./models/normalizer_{column}.pkl", "rb") as f:
-        print(f"./models/normalizer_{column}.pkl")
         normalizer = pickle.load(f)
 
     model = NeuralNet(normalizer.net_architecture)
@@ -23,7 +22,7 @@ def main(city, col_name):
     path = "./clean_norm_data/concat_clean_data_simulate_middle_day_test/"
     Y_test = pd.read_csv(path + "Y_test_last.csv", index_col=0)
     X_test = pd.read_csv(path + "X_test_middle.csv", header=None)
-
+    print(X_test.head())
     Y_test = Y_test[[column]]
     
     sample_X = torch.tensor(X_test.values, dtype=torch.float32)
@@ -34,7 +33,7 @@ def main(city, col_name):
         sample_X_normalized = (sample_X - normalizer.mean_X) / normalizer.std_X  # Normalize sample_X
         predictions = model(sample_X_normalized)  # Predictions in normalized space
         predictions_denormalized = normalizer.inverse_transform_Y(predictions)  # Denormalize
-        Y_pred = df = pd.DataFrame(predictions_denormalized.numpy(), columns=[column])
+        Y_pred = pd.DataFrame(predictions_denormalized.numpy(), columns=[column])
         Y_pred.index = Y_test.index
         Y = Y_test.merge(Y_pred, left_index=True, right_index=True, suffixes=('_real', '_pred'))
         return Y
